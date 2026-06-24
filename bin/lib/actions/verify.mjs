@@ -35,7 +35,7 @@ function handleVerify(ctx) {
   };
   if (!okNow) {
     const reasons = [...trace.holes];
-    if (stale) reasons.push('ARCHITECTURE.md is stale (run arch-sync)');
+    if (stale) reasons.push('ARCHITECTURE.md is stale — run `engine arch-sync` (no flags; --check only reports) to regenerate, then re-run verify');
     throw errGate(`verification failed: ${reasons.join('; ')}`, result);
   }
   return ok(result, `verified ${id}: traceability complete, architecture fresh.`);
@@ -81,7 +81,7 @@ function handleGateDone(ctx) {
   const { req } = loadReq(root, id, opts);
   const trace = traceabilityResult(root, req);
   if (!trace.ok) throw errGate(`traceability incomplete: ${trace.holes.join('; ')}`, { holes: trace.holes });
-  if (archStale(root)) throw errGate('ARCHITECTURE.md is stale; run arch-sync before DONE', { stale: true });
+  if (archStale(root)) throw errGate('ARCHITECTURE.md is stale; run `engine arch-sync` (no flags — --check only reports) before DONE', { stale: true });
   return ok({ id, ready: true }, `${id} is ready for DONE.`);
 }
 

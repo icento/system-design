@@ -56,10 +56,25 @@ function handleRetrieve(ctx) {
   if (!DOMAINS.includes(domain)) throw errUsage(`--domain must be one of ${DOMAINS.join('|')}`);
   const specText = readFileSync(specPath, 'utf8');
   const result = retrieve({ specText, domain, corpus });
-  const human = result.candidates.length
-    ? result.candidates.map((c) => `  ${c.id} [${c.severity}] signal=${c.signal} (${c.matched_triggers.join(', ')})`).join('\n')
-    : '  (no candidates above threshold)';
-  return ok(result, `retrieval for domain=${domain}:\n${human}`);
+  const lines = [`retrieval for domain=${domain} (min_signal=${result.min_signal}):`];
+  if (result.candidates.length) {
+    lines.push('  candidates:');
+    for (const c of result.candidates) {
+      lines.push(`    ${c.id} [${c.severity}] signal=${c.signal} (${c.matched_triggers.join(', ')})`);
+    }
+  } else if (result.dropped.length) {
+    // Triggers fired but every match fell below the floor / was gated. This is NOT the
+    // same as "no decisions to make" — the SPEC is relevant, the threshold just filtered.
+    lines.push(`  (no candidates above threshold; ${result.dropped.length} principle(s) triggered but were filtered — see "considered but dropped")`);
+  } else {
+    // Nothing in the corpus triggered at all: genuinely trivial for this domain.
+    lines.push('  (no principles triggered on this SPEC — likely a genuinely trivial change at this domain)');
+  }
+  if (result.dropped.length) {
+    lines.push('  considered but dropped:');
+    for (const d of result.dropped) lines.push(`    ${d.id} signal=${d.signal} (${d.reason})`);
+  }
+  return ok(result, lines.join('\n'));
 }
 
 function handleSchemaGet(ctx) {

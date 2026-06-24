@@ -84,6 +84,53 @@ function handleClassify(ctx) {
   return ok({ id, recommended: tier, reasons, applied }, `${id}: recommend ${tier} (${reasons.join('; ')})${applied ? ' [applied]' : ''}`);
 }
 
+// retier --id [--to TIER | --restore]  (correct an over-classification, or undo an
+// auto-escalation). Unlike `classify --apply` (gated to INTAKE/TRIAGED) and `triage`
+// (which only reaches the tier via the INTAKE->TRIAGED edge), retier sets the tier in
+// ANY non-terminal state — the gap the lifecycle otherwise leaves once a request has
+// progressed or been auto-escalated to DEEP by a governed-file edit.
+function handleRetier(ctx) {
+  const { root, opts } = ctx;
+  const id = ctx.values.id;
+  if (!id) throw errUsage('retier requires --id');
+  const { state, req } = loadReq(root, id, opts);
+
+  const restore = ctx.values.restore === true;
+  const toArg = ctx.values.to ? String(ctx.values.to).toUpperCase() : null;
+  if (!restore && !toArg) throw errUsage('retier requires --to <TIER> or --restore');
+  if (restore && toArg) throw errUsage('retier: pass either --to or --restore, not both');
+
+  let to;
+  if (restore) {
+    // Undo a governed-file auto-escalation back to the recorded prior tier. Floored at
+    // STANDARD: once architecture was in play, the SPEC/PLAN/review gates stay in force.
+    if (!req.escalatedFrom) {
+      throw errGate(`${id} was not auto-escalated (no prior tier recorded); use --to <tier> to set one`, { tier: req.tier });
+    }
+    to = req.escalatedFrom === 'TRIVIAL' ? 'STANDARD' : req.escalatedFrom;
+  } else {
+    if (!TIERS.includes(toArg)) throw errUsage(`retier --to must be ${TIERS.join('|')}`);
+    to = toArg;
+  }
+
+  // Gate-safety: TRIVIAL short-circuits the SPECCED/PLANNED/PLAN_OK/VERIFYING gates, so
+  // dropping to it mid-flow would let later transitions skip SPEC/PLAN/review entirely.
+  // Only permit TRIVIAL before any artifact gate is in play (INTAKE/TRIAGED).
+  if (to === 'TRIVIAL' && !['INTAKE', 'TRIAGED'].includes(req.status)) {
+    throw errGate(`cannot retier to TRIVIAL in state ${req.status} — TRIVIAL skips the SPEC/PLAN/review gates; downgrade to STANDARD instead`, { status: req.status, tier: req.tier });
+  }
+
+  const from = req.tier;
+  req.tier = to;
+  if (req.escalatedFrom) delete req.escalatedFrom; // consume the (previously dead) marker
+  req.updatedAt = opts.clock ? opts.clock() : new Date().toISOString();
+  save(root, state, opts);
+  return ok(
+    { id, from: from ?? null, to, restored: restore, status: req.status },
+    `${id}: re-tiered ${from ?? '?'} -> ${to}${restore ? ' (restored prior tier)' : ''}.`,
+  );
+}
+
 // validate-doc --kind <k> --path <p>  (referential checks beyond JSON schema)
 function handleValidateDoc(ctx) {
   const kind = ctx.values.kind;
@@ -137,6 +184,11 @@ export const clarifyCommands = {
     summary: 'recommend a tier from intake signals; --apply to write it',
     options: { id: { type: 'string' }, 'touches-adr': { type: 'boolean' }, 'adds-dep': { type: 'boolean' }, files: { type: 'string' }, hint: { type: 'string' }, apply: { type: 'boolean' } },
     handler: handleClassify,
+  },
+  retier: {
+    summary: 'correct a tier after triage (--to TIER) or undo an auto-escalation (--restore)',
+    options: { id: { type: 'string' }, to: { type: 'string' }, restore: { type: 'boolean' } },
+    handler: handleRetier,
   },
   'validate-doc': {
     summary: 'referential validation of a SPEC/ADR/verdict document',

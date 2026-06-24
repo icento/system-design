@@ -16,8 +16,38 @@ match the plugin manifest version (`engine selfcheck` enforces this on release).
   to disprove it; a null result blocks the change). Corpus grows 18 → 22 records;
   `docs/PRINCIPLES.md` regenerated. All four are advisory/recommended, so they add ADR
   decision questions without introducing a new hard gate.
+- `engine retier --id <id> [--to TIER | --restore]` — correct an over-classified tier
+  after triage (the lifecycle previously had no way to lower a tier once a request left
+  INTAKE/TRIAGED), or undo a governed-file auto-escalation to DEEP via `--restore`, which
+  consumes the previously-dead `escalatedFrom` marker. Refuses a downgrade to TRIVIAL once
+  past TRIAGED, because TRIVIAL short-circuits the SPEC/PLAN/review gates. Documented in
+  the `sd-intake` skill.
 
 ### Fixed
+- VERIFY phase taught the `arch-sync` remedy where the gate actually fires. The DONE /
+  `engine verify` gate could fail with "ARCHITECTURE.md is stale" while `sd-verify` never
+  mentioned `arch-sync` and the natural guess `arch-sync --check` only *reports* (it does
+  not clear) staleness. `sd-verify` and `commands/verify.md` now document the fix-in-place
+  (regenerate with bare `arch-sync`, then re-verify — not a loop-back), and the engine's
+  gate strings name the exact invocation and the `--check` caveat.
+- `principles retrieve` now surfaces the `dropped[]` set and `min_signal` it already
+  computes, and distinguishes "no principles triggered (genuinely trivial)" from
+  "triggered but filtered below the signal floor". The `principle-architect` reads
+  `dropped[]` and grounds its empty-question-set `note` in *why* it was empty instead of a
+  fixed boilerplate string — so an empty ADR set no longer hides whether retrieval matched.
+- `sd-design`: the empty-ADR branch's parenthetical "(advance SPECCED → PLANNED for
+  STANDARD)" invited a premature bare advance the engine refuses (PLAN.md is authored in
+  the plan phase). It now states the advance belongs to `/sd:plan`, applies on any tier,
+  and points at the retrieval `dropped[]` for the below-floor case. `sd-plan`'s entry guard
+  and `SPECCED → PLANNED` ownership were clarified to match.
+- `sd-decide` gained an explicit "no decisions to make" branch: on the empty path it skips
+  the gate and routes to `/sd:plan` instead of authoring/`decisions write`-ing an empty
+  `decisions.json`.
+- The G3 precondition message named `plan-review.md` though the gate actually reads
+  `qa/plan-review.verdict.json`; corrected to name the file it inspects.
+- `sd-plan` documents that `engine step-done` re-serializes `PLAN.md` through the YAML
+  writer (canonicalizing layout, never content) — it is the engine, not a silent linter,
+  and no hook reformats `PLAN.md`.
 - `/plugin marketplace add icento/system-design` failed with "Marketplace file not
   found": moved the catalog from the repo root to `.claude-plugin/marketplace.json`,
   the path Claude Code resolves (the `source:"./"` entry still points at the repo root).

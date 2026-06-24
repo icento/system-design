@@ -27,6 +27,12 @@ is not yet initialized (`engine status --hook` exits 0 silently when it isn't).
    - **TRIVIAL** — a CHANGELOG-line change; no SPEC/ADR/PLAN. (`/sd:spec` will finish it.)
    - **STANDARD** — SPEC + PLAN; ADRs optional.
    - **DEEP** — full machine: SPEC, principle-derived ADRs, reviewed PLAN, traceability.
+   - **Picked the wrong tier?** Correct it any time with
+     `$ENGINE retier --id <id> --to <TIER>` (not just at intake). Editing an
+     accepted-ADR-governed file auto-escalates a request to DEEP; undo that with
+     `$ENGINE retier --id <id> --restore`, which returns it to the prior tier. Note you
+     can only drop to **TRIVIAL** while still at INTAKE/TRIAGED — once SPEC/PLAN gates are
+     in play, the lowest safe downgrade is STANDARD (TRIVIAL would skip those gates).
 5. **Report** the id, tier, and open-question count, and tell the user the next step is
    `/sd:spec`.
 

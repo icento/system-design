@@ -11,6 +11,11 @@ run on the main thread (where `AskUserQuestion` is available) and is never overr
 
 ## Entry guard
 `$ENGINE context --id <id>` — proceed only if status is `ADR_PROPOSED`.
+- **No decisions to make.** If status is anything else — e.g. `SPECCED` with no staged
+  ADRs (retrieval returned nothing) — there is nothing for this gate to decide: do **not**
+  author or `decisions write` an empty `decisions.json`, and do **not** advance to
+  `DECIDED`. Skip this gate entirely and go to `/sd:plan` (the `SPECCED → PLANNED` edge
+  bypasses `DECIDED` by design). Stop and report any other unexpected state.
 
 ## Protocol
 1. Read `requests/<id>/decisions.json`. For each question, read the staged ADR at

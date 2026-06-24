@@ -77,7 +77,7 @@ export function makePreconditions(deps = {}) {
       if (req.tier === 'TRIVIAL') return { ok: true, missing: [] };
       const missing = [];
       const v = planReviewVerdict(req);
-      if (!v) missing.push('plan-review.md verdict missing or invalid');
+      if (!v) missing.push('qa/plan-review.verdict.json verdict missing or invalid');
       else {
         if (v.verdict !== 'PASS') missing.push(`plan-review verdict is ${v.verdict}, not PASS`);
         if ((v.blockerCount ?? 0) !== 0) missing.push(`plan-review has ${v.blockerCount} blocker(s) (must be 0)`);
@@ -98,7 +98,7 @@ export function makePreconditions(deps = {}) {
       const missing = [];
       const trace = traceabilityComplete(req);
       if (!trace.ok) missing.push(`traceability incomplete: ${(trace.holes ?? []).join('; ') || 'holes present'}`);
-      if (archStale()) missing.push('ARCHITECTURE.md is stale; run arch-sync');
+      if (archStale()) missing.push('ARCHITECTURE.md is stale; run `engine arch-sync` (no flags — --check only reports) to regenerate it');
       return { ok: missing.length === 0, missing };
     },
   };

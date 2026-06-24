@@ -21,6 +21,11 @@ in which case finish/advance to VERIFYING first).
 3. **Engine pre-gate.** Run `$ENGINE verify --id <id>` — it independently checks
    REQ→STEP→TEST traceability (every requirement covered, every step's tests resolve)
    and ARCHITECTURE freshness. It exits non-zero with the holes if not ready.
+   - **Stale architecture (not a loop-back).** If `verify` fails *only* on
+     `ARCHITECTURE.md is stale` (traceability is otherwise complete), the accepted ADRs
+     changed and the generated doc is behind. Regenerate it in place:
+     `$ENGINE arch-sync` — **no flags** (`arch-sync --check` only *reports* staleness, it
+     does not clear it). Then re-run `$ENGINE verify --id <id>` and continue to step 4.
 4. **Route.**
    - `overall == PASS` **and** `engine verify` is clean → `$ENGINE advance --id <id> --to DONE`. 🎉
    - otherwise pick the **highest-priority** failure root cause and loop back:
@@ -28,6 +33,8 @@ in which case finish/advance to VERIFYING first).
      - else any `bad_adr` → `$ENGINE advance --id <id> --to REVISING_ADR` (then `/sd:design`)
      - else (`code_local`) → `$ENGINE advance --id <id> --to IMPLEMENTING` (then `/sd:implement`)
    Priority order is fixed: `missing_requirement > bad_adr > code_local`.
+   (A stale-architecture failure is fixed in place per step 3 — it is not one of these
+   loop-backs.)
 
 ## RULES
 Never hand-edit `docs/.state.json`. The qa-verifier is read-only and adversarial — do

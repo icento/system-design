@@ -10,8 +10,11 @@ description: Write a detailed implementation PLAN for a request, with steps link
 
 ## Entry guard
 `$ENGINE context --id <id>` — proceed only if status is `DECIDED`, `SPECCED`
-(STANDARD with no ADRs), or `REVISING_SPEC`. (For SPECCED→PLANNED on a DEEP request,
-the engine refuses while ADRs are still proposed.)
+(any tier whose retrieval produced no ADRs to decide — STANDARD or DEEP), or
+`REVISING_SPEC`. (For `SPECCED → PLANNED` on a DEEP request the engine refuses while any
+ADR is still proposed; you reach PLANNED here only once there are none to decide.)
+This skill **owns** the `SPECCED → PLANNED` advance (step 4): it authors `PLAN.md` first,
+which the engine requires before that transition will succeed.
 
 ## Protocol
 1. Read `requests/<id>/SPEC.md` (requirements) and every **accepted** ADR the request
@@ -37,3 +40,8 @@ the engine refuses while ADRs are still proposed.)
 ## RULES
 Never hand-edit `docs/.state.json`. The PLAN scope = union of `steps[].files`; keep it
 honest, since the implement gate enforces it. Persist `PLAN.md` before advancing.
+
+Note: marking a step done later (`$ENGINE step-done`) re-serializes `PLAN.md` through the
+engine's YAML writer, which canonicalizes formatting (e.g. flow sequences `[a, b]` become
+block `- a`/`- b`). That is the engine, not a linter, and it changes layout only — never
+your content. No hook reformats `PLAN.md`; only `step-done` rewrites it.

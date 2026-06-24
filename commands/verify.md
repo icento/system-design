@@ -8,3 +8,7 @@ Run the **VERIFY** phase for request `$ARGUMENTS` (or the active request). Follo
 verify` for traceability + architecture freshness, then advance to DONE on a clean PASS
 or route a loop-back (missing_requirement → REVISING_SPEC, bad_adr → REVISING_ADR,
 code_local → IMPLEMENTING).
+
+If `engine verify` blocks only on a stale `ARCHITECTURE.md`, regenerate it with `engine
+arch-sync` (no flags — `--check` only reports) and re-run verify; this is a fix-in-place,
+not a loop-back.

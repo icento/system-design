@@ -17,7 +17,13 @@ description: Turn a SPEC into principle-derived architecture decision questions 
    cluster the candidates into ≤7 decision questions, **write proposed ADR files under
    `docs/adrs/`**, and return a **DecisionQuestionSet JSON** as its entire output.
    - If it returns an empty question set (`questions: []`), there are no architecture
-     decisions to make: skip to `/sd:plan` (advance SPECCED → PLANNED for STANDARD).
+     decisions to make (this applies on any tier — DEEP included — when retrieval finds
+     nothing to decide): **skip straight to `/sd:plan`. Do not advance here.** `/sd:plan`
+     authors `PLAN.md` and then runs the `SPECCED → PLANNED` advance itself; the engine
+     refuses that transition until `PLAN.md` exists, so a bare advance from this phase
+     will fail. Before treating the empty set as "nothing to decide", glance at the
+     architect's note / the retrieval `dropped[]` — an empty set can also mean candidates
+     fell *below the signal floor* (see step 1's note), which is different from trivial.
 2. **Persist the handoff.** Write the architect's JSON to
    `requests/<id>/decisions.json`, then validate + normalize it:
    `$ENGINE decisions write --req <id> --from requests/<id>/decisions.json`.

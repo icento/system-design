@@ -55,6 +55,60 @@ test('classify recommends a tier; --apply only in INTAKE/TRIAGED', () => {
   }
 });
 
+test('retier corrects a tier past TRIAGED where classify --apply is refused', () => {
+  const root = initRepo();
+  try {
+    engine(['register', '--title', 'Mis-tiered', '--slug', 'mt', '--tier', 'STANDARD'], { root });
+    engine(['triage', '--id', 'req-0001', '--tier', 'STANDARD'], { root });
+    touch(root, 'requests/req-0001/SPEC.md', 'spec');
+    engine(['advance', '--id', 'req-0001', '--to', 'SPECCED'], { root });
+
+    // classify --apply is refused once past INTAKE/TRIAGED ...
+    assert.equal(engine(['classify', '--id', 'req-0001', '--apply'], { root }).code, 5);
+    // ... but retier --to works in any non-terminal state.
+    const up = engine(['retier', '--id', 'req-0001', '--to', 'DEEP'], { root });
+    assert.equal(up.code, 0);
+    assert.equal(up.json.to, 'DEEP');
+    // Dropping to TRIVIAL mid-flow is refused (it would skip SPEC/PLAN/review gates).
+    assert.equal(engine(['retier', '--id', 'req-0001', '--to', 'TRIVIAL'], { root }).code, 5);
+    // STANDARD is the lowest safe downgrade here.
+    assert.equal(engine(['retier', '--id', 'req-0001', '--to', 'STANDARD'], { root }).json.to, 'STANDARD');
+    // Bad usage: neither --to nor --restore (EUSAGE 2); TRIVIAL still allowed at TRIAGED.
+    assert.equal(engine(['retier', '--id', 'req-0001'], { root }).code, 2);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('retier --restore undoes a governed-file auto-escalation, then is spent', () => {
+  const root = initRepo();
+  try {
+    engine(['register', '--title', 'Governed', '--slug', 'gov', '--tier', 'STANDARD'], { root });
+    engine(['triage', '--id', 'req-0001', '--tier', 'STANDARD'], { root });
+    // Nothing to restore yet -> EGATE 5.
+    assert.equal(engine(['retier', '--id', 'req-0001', '--restore'], { root }).code, 5);
+
+    // Seed the accepted-ADR governs index so editing src/** auto-escalates to DEEP.
+    const index = {
+      version: 1, builtAt: '2026-01-01T00:00:00.000Z', acceptedSetHash: 'x',
+      entries: [{ adr: 'adr-0001', status: 'accepted', governs: ['src/**'], constraints: { forbids: [], requires: [] } }],
+      globIndex: [{ glob: 'src/**', adr: 'adr-0001' }],
+    };
+    touch(root, 'docs/.governs-index.json', JSON.stringify(index, null, 2));
+    engine(['hook-gate'], { root, json: false, input: JSON.stringify({ tool_name: 'Edit', tool_input: { file_path: 'src/app.js' } }) });
+    assert.equal(engine(['context', '--id', 'req-0001'], { root }).json.tier, 'DEEP', 'auto-escalated');
+
+    const r = engine(['retier', '--id', 'req-0001', '--restore'], { root });
+    assert.equal(r.code, 0);
+    assert.equal(r.json.to, 'STANDARD');
+    assert.equal(engine(['context', '--id', 'req-0001'], { root }).json.tier, 'STANDARD', 'restored');
+    // Marker consumed: a second restore errors.
+    assert.equal(engine(['retier', '--id', 'req-0001', '--restore'], { root }).code, 5);
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('validate-doc spec: valid passes, REQ-owner mismatch and bad enum fail (ESCHEMA 9)', () => {
   const root = initRepo();
   try {

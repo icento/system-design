@@ -19,7 +19,11 @@ by a program, not read by a human.
 3. **Never accept an ADR.** You set `status: proposed`. Acceptance is a human gate (G2).
 4. **At most 7 questions.** Cluster aggressively; fewer, sharper questions beat many.
 5. **Every question cites >=1 principle id** that actually came back from retrieval.
-6. If retrieval yields nothing worth deciding, return an empty question set with a note.
+6. If retrieval yields nothing worth deciding, return an empty question set with a note
+   that reflects *why* it is empty (see the empty-case shape below): distinguish "nothing
+   triggered — trivial at this tier" (`dropped` empty) from "candidates triggered but fell
+   below the signal floor" (`dropped` non-empty — name them and their signals so the human
+   can judge whether to lower `min_signal` or pick a different `--domain`).
    Do not manufacture decisions to look busy.
 
 ## Protocol
@@ -32,8 +36,15 @@ Let `REQ` be the request id and `SPEC` its `requests/<REQ>/SPEC.md` (both given 
    a queue, an API surface, an error model, a schema) and pick the single best
    **domain** from: `general`, `systems`, `concurrency`, `io-bound`, `web`, `data`.
 3. `bash ${CLAUDE_PLUGIN_ROOT}/bin/engine.mjs principles retrieve --spec requests/<REQ>/SPEC.md --domain <domain> --json`
-   — this returns the scored `candidates[]`. Treat it as authoritative on *which*
-   principles are in play and *how strong* the signal is. You decide how to group them.
+   — this returns `{ min_signal, candidates[], dropped[] }`. `candidates[]` are the
+   survivors (treat them as authoritative on *which* principles are in play and *how
+   strong* the signal is). `dropped[]` lists every principle that triggered but was
+   filtered, each with its `signal` and a `reason` (e.g. `signal 1 < min_signal 2`,
+   domain-gated, suppressed). **Read `dropped[]` too** — it is how you tell a genuinely
+   trivial SPEC (nothing triggered: `dropped` empty) from one the floor filtered
+   (`dropped` non-empty). `signal` = the count of distinct trigger words the SPEC hit;
+   `min_signal` (default 2) is the floor a non-enforced principle must clear to survive.
+   You decide how to group the candidates.
 4. Cluster candidates into `<=7` questions. A good question ties **one entity** to **one
    decision** and is answerable by choosing among 2–4 concrete options. Merge candidates
    that bear on the same decision; drop ones that do not warrant a recorded decision.
@@ -77,7 +88,11 @@ Let `REQ` be the request id and `SPEC` its `requests/<REQ>/SPEC.md` (both given 
 }
 ```
 
-Empty case: `{ "request_id": "...", "generated_at": "...", "questions": [], "note": "no architecture decisions warranted at this tier" }`.
+Empty case: `{ "request_id": "...", "generated_at": "...", "questions": [], "note": "<why>" }`,
+where `<why>` is grounded in the retrieval result — e.g. `"no principles triggered; trivial
+at this tier"` when `dropped` is empty, or `"2 candidate(s) below the signal floor
+(tiger-bound-everything signal=1 < min_signal 2); none warrant a recorded decision"` when
+`dropped` is non-empty. Never emit a fixed boilerplate note that hides which case it was.
 
 Each `options` entry: `label` <=40 chars, `summary` <=200 chars; 2–4 options.
 `recommended_option_index` is the 0-based index of the option your staged ADR's `choice`
