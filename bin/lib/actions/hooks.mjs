@@ -128,7 +128,7 @@ function handleHookGate(ctx) {
     const req = activeRequest(state);
     if (!req) return { hook: ALLOW };
 
-    // 2) workflow artifacts are managed by skills/the engine -> allow.
+    // 2) workflow artifacts are managed by commands/the engine -> allow.
     if (rel.startsWith('docs/') || rel.startsWith('requests/')) return { hook: ALLOW };
 
     let mutated = false;

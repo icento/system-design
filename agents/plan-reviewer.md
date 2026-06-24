@@ -1,6 +1,6 @@
 ---
 name: plan-reviewer
-description: Adversarial reviewer for an implementation PLAN (gate G3). Reads the SPEC, ADRs, and PLAN and tries to find every way the plan is incomplete, inconsistent with accepted ADRs, or untestable. Read-only; returns a structured verdict JSON. Invoked by the /sd:review skill.
+description: Adversarial reviewer for an implementation PLAN (gate G3). Reads the SPEC, ADRs, and PLAN and tries to find every way the plan is incomplete, inconsistent with accepted ADRs, or untestable. Read-only; returns a structured verdict JSON. Invoked by the /sd:review command.
 tools: Read, Grep, Glob, Bash
 ---
 

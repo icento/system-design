@@ -1,5 +1,5 @@
-// lint.test.mjs — static hygiene of the user-facing surface (skills, commands,
-// agents). Enforces the skill protocol invariants without running a model.
+// lint.test.mjs — static hygiene of the user-facing surface (commands, agents).
+// Enforces the command protocol invariants without running a model.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,7 +19,6 @@ function walk(dir, match) {
   return out;
 }
 
-const skillFiles = () => walk(resolve(PLUGIN_ROOT, 'skills'), (n) => n === 'SKILL.md');
 const commandFiles = () => walk(resolve(PLUGIN_ROOT, 'commands'), (n) => n.endsWith('.md'));
 const agentFiles = () => walk(resolve(PLUGIN_ROOT, 'agents'), (n) => n.endsWith('.md'));
 
@@ -27,20 +26,10 @@ const agentFiles = () => walk(resolve(PLUGIN_ROOT, 'agents'), (n) => n.endsWith(
 // like "Never hand-edit docs/.state.json" are fine.
 const FORBIDDEN_STATE_WRITE = /(^|[\s;|&])(>>?|tee\b)[^\n]*\.state\.json/m;
 
-test('skills: valid frontmatter, RULES sentinel, no direct state writes', () => {
-  const files = skillFiles();
-  assert.ok(files.length >= 6, 'found the M3 skills');
-  for (const f of files) {
-    const text = readFileSync(f, 'utf8');
-    const { data, body } = parse(text);
-    assert.ok(data.name, `${f}: frontmatter name`);
-    assert.ok(data.description, `${f}: frontmatter description`);
-    assert.match(body, /Never hand-edit/, `${f}: RULES sentinel present`);
-    assert.ok(!FORBIDDEN_STATE_WRITE.test(text), `${f}: must not write .state.json directly`);
-  }
-});
+// A command must not delegate to a deleted skill — the procedure now lives inline.
+const DANGLING_SKILL_REF = /`sd-[a-z]+`\s+skill|[Ff]ollow the `sd-/;
 
-test('commands: valid frontmatter with a description, no direct state writes', () => {
+test('commands: self-contained, valid frontmatter, no direct state writes', () => {
   const files = commandFiles();
   assert.ok(files.length >= 6, 'found the M3 commands');
   for (const f of files) {
@@ -48,6 +37,7 @@ test('commands: valid frontmatter with a description, no direct state writes', (
     const { data } = parse(text);
     assert.ok(data.description, `${f}: frontmatter description`);
     assert.ok(!FORBIDDEN_STATE_WRITE.test(text), `${f}: must not write .state.json directly`);
+    assert.ok(!DANGLING_SKILL_REF.test(text), `${f}: must not delegate to a (deleted) skill`);
   }
 });
 

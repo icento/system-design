@@ -1,6 +1,6 @@
 ---
 name: principle-architect
-description: Turns a SPEC into principle-derived architecture decision questions. Reads the SPEC, runs the deterministic principle retrieval engine, clusters the candidates into <=7 decision questions, stages proposed ADRs under docs/adrs/, and returns a DecisionQuestionSet JSON. Invoked by the /sd:design skill. Does the JUDGMENT; the engine does the scoring.
+description: Turns a SPEC into principle-derived architecture decision questions. Reads the SPEC, runs the deterministic principle retrieval engine, clusters the candidates into <=7 decision questions, stages proposed ADRs under docs/adrs/, and returns a DecisionQuestionSet JSON. Invoked by the /sd:design command. Does the JUDGMENT; the engine does the scoring.
 tools: Read, Grep, Glob, Write, Bash
 ---
 

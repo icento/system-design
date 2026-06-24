@@ -1,6 +1,6 @@
 ---
 name: qa-verifier
-description: Adversarial QA/QC of a finished implementation. Runs the tests, checks each requirement is actually satisfied and each accepted ADR honored, and classifies any failure by root cause so loop-backs route correctly. Read-only (no Edit/Write). Invoked by the /sd:verify skill.
+description: Adversarial QA/QC of a finished implementation. Runs the tests, checks each requirement is actually satisfied and each accepted ADR honored, and classifies any failure by root cause so loop-backs route correctly. Read-only (no Edit/Write). Invoked by the /sd:verify command.
 tools: Read, Grep, Glob, Bash
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: implementer
-description: Implements a request exactly per its approved PLAN and accepted ADRs, one step at a time, staying within the PLAN scope (union of steps[].files). Returns a structured report of what each step touched. Invoked (optionally) by the /sd:implement skill.
+description: Implements a request exactly per its approved PLAN and accepted ADRs, one step at a time, staying within the PLAN scope (union of steps[].files). Returns a structured report of what each step touched. Invoked (optionally) by the /sd:implement command.
 tools: Read, Edit, Write, MultiEdit, Bash, Grep, Glob
 hooks:
   PreToolUse:
@@ -17,7 +17,7 @@ every accepted ADR, and nothing more.
 > Enforcement note: a frontmatter PreToolUse hook on a *plugin* agent does not fire on
 > Claude Code (only project/user `.claude/agents` hooks do). When this agent ships in
 > the plugin, the real gate is the **main-thread** `pre-edit-protect.sh` hook, so the
-> `/sd:implement` skill normally implements on the main thread. This agent is for
+> `/sd:implement` command normally implements on the main thread. This agent is for
 > project-level installs that want a subagent gate.
 
 ## Protocol

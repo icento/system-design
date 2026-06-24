@@ -130,7 +130,7 @@ function handleDecide(ctx) {
 
   if (verdict === 'accept') flipAdr(root, req, adrId, 'accepted', opts);
   else if (verdict === 'reject') flipAdr(root, req, adrId, 'rejected', opts);
-  // modify: leave proposed; the sd-decide skill routes the request to REVISING_ADR.
+  // modify: leave proposed; the /sd:decide command routes the request to REVISING_ADR.
   save(root, state, opts);
   saveGovernsIndex(root, buildGovernsIndex(root, state, opts.clock));
   if (verdict !== 'modify') markArchStale(root);

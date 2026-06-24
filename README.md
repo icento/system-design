@@ -124,7 +124,7 @@ governs globs, REQ→STEP→TEST holes, stale ARCHITECTURE, numeric limits) — 
 
 `bin/engine.mjs` is a zero-dependency Node ≥18.3 ESM executable: the sole writer of
 `docs/.state.json` (atomic temp+rename, `.bak` recovery, schema-validated) and the
-gatekeeper with a frozen exit-code contract. Skills and hooks shell out to it; they
+gatekeeper with a frozen exit-code contract. Commands and hooks shell out to it; they
 never touch state directly. Run `node bin/engine.mjs help` for the full surface.
 
 ## Development

@@ -6,6 +6,20 @@ match the plugin manifest version (`engine selfcheck` enforces this on release).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-24
+
+### Changed
+- Consolidated the user-facing surface to **`/sd:` commands only**. Each phase used to
+  ship as both a model-invoked SKILL (`skills/sd-*/SKILL.md`) and a thin `/sd:` command
+  that delegated to it, so the slash menu listed every phase twice (e.g. `/sd:init` *and*
+  `/sd-init`). Every skill's full procedure (engine preamble, entry guard, protocol,
+  RULES) is now inlined into its command, the `skills/` directory and the manifest's
+  `skills: "./skills"` entry are removed, and `config.md` (which never had a skill) is
+  unchanged. The lint test now asserts commands are self-contained (no dangling
+  `` `sd-*` skill `` delegation). **Behavior note:** phases are now invoked only via their
+  explicit `/sd:` command — they can no longer be auto-triggered from natural-language
+  intent the way a skill description could.
+
 ## [0.2.0] - 2026-06-24
 
 ### Added
