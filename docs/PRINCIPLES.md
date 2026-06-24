@@ -1,9 +1,10 @@
 ---
 kind: principles-index
 generated: true
-count: 18
+count: 22
 sources:
   aposd: 8
+  house: 4
   tiger-style: 10
 precedence:
   - tiger-style
@@ -36,3 +37,7 @@ Source precedence: tiger-style > aposd.
 | `aposd-information-hiding` | aposd | recommended | general | Information hiding |
 | `aposd-pull-complexity-down` | aposd | recommended | general | Pull complexity downward |
 | `aposd-strategic` | aposd | advisory | general | Strategic, not tactical programming |
+| `house-comprehend-first` | house | recommended | general | Understand before deciding |
+| `house-falsifiable-decision` | house | advisory | general | Make decisions falsifiable and validate to disprove |
+| `house-root-cause` | house | recommended | general | Fix the root cause at the shared site, not the symptom |
+| `house-simplicity-ladder` | house | recommended | general | Climb the simplicity ladder and stop at the first rung that holds |

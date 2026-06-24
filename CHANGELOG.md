@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the top released version must
 match the plugin manifest version (`engine selfcheck` enforces this on release).
 
+## [Unreleased]
+
+### Added
+- Four `house` decision principles distilled from the ponytail lazy-senior-dev
+  discipline: `house-comprehend-first` (trace the real flow before choosing a solution
+  shape), `house-simplicity-ladder` (prefer the cheapest viable rung — reuse, stdlib,
+  native, installed dep — and stop at the first that holds), `house-root-cause` (fix at
+  the shared site after enumerating callers, not the symptom), and
+  `house-falsifiable-decision` (state the observable a decision must move and validate
+  to disprove it; a null result blocks the change). Corpus grows 18 → 22 records;
+  `docs/PRINCIPLES.md` regenerated. All four are advisory/recommended, so they add ADR
+  decision questions without introducing a new hard gate.
+
 ## [0.1.0] - 2026-06-24
 
 ### Added

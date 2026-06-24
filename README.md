@@ -15,9 +15,10 @@ Two things make it more than a checklist:
 
 1. **A machine-queryable principle rubric.** APoSD (*A Philosophy of Software Design*)
    and TigerBeetle's TIGER_STYLE are encoded as 18 records with triggers, domains, and
-   numeric limits. A deterministic engine command scores them against your SPEC; a
-   subagent turns the top candidates into architecture **decision questions** with
-   principle-cited recommendations.
+   numeric limits, plus 4 `house` decision principles (comprehend-first, the simplicity
+   ladder, root-cause-at-the-shared-site, and falsifiable decisions) for 22 in total. A
+   deterministic engine command scores them against your SPEC; a subagent turns the top
+   candidates into architecture **decision questions** with principle-cited recommendations.
 2. **Real enforcement.** A `PreToolUse` gate blocks edits that fall outside the approved
    PLAN scope or violate an accepted ADR, traceability gates `DONE`, and a generated
    `ARCHITECTURE.md` must be fresh — backed by an audited override escape hatch.

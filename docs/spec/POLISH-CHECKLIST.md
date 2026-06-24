@@ -6,7 +6,7 @@ the *human* review checklist — things a machine cannot confidently judge.
 ## MVP (engine + spine)
 - [x] Engine: precise subcommands/flags, frozen exit-code contract, idempotent, `--json` co-emits `{ok,code}`.
 - [x] `docs/.state.json` atomic (temp+rename, same dir), schema-validated on every save, `.bak` recovery, never persists invalid state.
-- [x] All 18 principle records valid; `principles index` byte-idempotent; `principles retrieve` deterministic + unit-tested.
+- [x] All 22 principle records valid; `principles index` byte-idempotent; `principles retrieve` deterministic + unit-tested.
 - [x] `principle-architect` writes only `docs/adrs/`; `engine decisions write` persists the handoff; G2 crash-safe; SessionStart rehydrates.
 - [x] The main-thread edit gate denies with a reason; hooks degrade (exit 0 / fail-open) outside a workflow repo.
 - [x] `npm test` green on Node 22, zero deps.

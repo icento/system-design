@@ -65,9 +65,9 @@ test('precedence orders equal severity+signal by source (tiger before aposd)', (
 
 const realCorpus = () => loadCorpus(resolve(PLUGIN_ROOT, 'docs', 'principles'));
 
-test('real corpus: 18 records, all valid, lint clean', () => {
+test('real corpus: 22 records, all valid, lint clean', () => {
   const corpus = realCorpus();
-  assert.equal(corpus.principles.length, 18);
+  assert.equal(corpus.principles.length, 22);
   const v = validateCorpus(corpus, validate, loadSchema('principle.frontmatter'));
   assert.ok(v.ok, JSON.stringify(v.problems));
   assert.ok(lintCorpus(corpus).ok);
@@ -81,7 +81,7 @@ test('principles index is byte-idempotent and schema-valid', () => {
   // The generated frontmatter validates against its schema.
   const data = parse(a).data;
   assert.ok(validate(loadSchema('principles-index.frontmatter'), data).valid);
-  assert.equal(data.count, 18);
+  assert.equal(data.count, 22);
 });
 
 test('engine principles validate/index are wired and idempotent', () => {
