@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://icento.dev/system-design/principle.frontmatter.schema.json",
+  "title": "principle record frontmatter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "source", "title", "domain", "severity", "statement", "triggers", "recommended_default", "decision_question_template"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^(aposd|tiger|house)-[a-z0-9]+(-[a-z0-9]+)*$" },
+    "source": { "type": "string", "enum": ["aposd", "tiger-style", "house"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "domain": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "enum": ["general", "systems", "concurrency", "io-bound", "web", "data"] }
+    },
+    "severity": { "type": "string", "enum": ["advisory", "recommended", "enforced"] },
+    "statement": { "type": "string", "minLength": 1, "maxLength": 400 },
+    "triggers": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 2, "maxLength": 60 }
+    },
+    "recommended_default": { "type": "string", "minLength": 1, "maxLength": 400 },
+    "decision_question_template": { "type": "string", "minLength": 1, "maxLength": 280 },
+    "anti_patterns": { "type": "array", "items": { "type": "string", "maxLength": 200 } },
+    "limits": { "type": "object", "additionalProperties": { "type": "number" } },
+    "lint_rule": { "type": "string", "enum": ["assert-density", "unbounded-loop", "size", "name-units", "error-handling"] }
+  }
+}

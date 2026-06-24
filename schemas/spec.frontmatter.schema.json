@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://icento.dev/system-design/spec.frontmatter.schema.json",
+  "title": "SPEC frontmatter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "title", "status", "requirements"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^req-\\d{4}$" },
+    "kind": { "const": "spec" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "status": { "type": "string", "enum": ["draft", "clarifying", "ready"] },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "statement", "kind", "priority"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^REQ-\\d{4}-\\d{2}$" },
+          "statement": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "kind": { "type": "string", "enum": ["functional", "nonfunctional", "constraint"] },
+          "priority": { "type": "string", "enum": ["must", "should", "may"] },
+          "acceptance": { "type": "string", "maxLength": 400 }
+        }
+      }
+    },
+    "nonGoals": { "type": "array", "items": { "type": "string", "maxLength": 200 } },
+    "supersedes": { "type": ["string", "null"], "pattern": "^req-\\d{4}$" }
+  }
+}

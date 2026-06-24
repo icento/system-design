@@ -1,0 +1,26 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Zero npm dependencies — there is intentionally no `npm install` step.
+      - name: Test suite
+        run: node test/run.mjs
+      - name: Plugin self-check (independent backstop)
+        run: node bin/engine.mjs selfcheck
+      - name: Subcommand coverage map
+        run: node test/run.mjs --coverage-map
+      - name: claude plugin validate (non-fatal — selfcheck is the gate)
+        run: |
+          if command -v claude >/dev/null 2>&1; then
+            claude plugin validate . || true
+          else
+            echo "claude CLI not available; relying on engine selfcheck"
+          fi

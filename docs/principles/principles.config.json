@@ -1,0 +1,9 @@
+{
+  "sources_precedence": ["tiger-style", "aposd"],
+  "domain_gates": {
+    "io-bound": { "suppress": ["tiger-static-allocation", "tiger-no-recursion"] },
+    "web": { "suppress": ["tiger-static-allocation"] }
+  },
+  "min_signal": 2,
+  "max_questions_per_run": 7
+}

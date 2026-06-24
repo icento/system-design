@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/base.json",
+  "systemDesign": {
+    "enforcement": "warn",
+    "tigerLintBlocking": false,
+    "defaultTier": null,
+    "minNodeVersion": "18.3.0"
+  }
+}

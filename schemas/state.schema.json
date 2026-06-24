@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://icento.dev/system-design/state.schema.json",
+  "title": "system-design workflow state",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "updatedAt", "meta", "requests"],
+  "properties": {
+    "version": { "const": 1 },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["createdAt"],
+      "properties": {
+        "createdAt": { "type": "string", "format": "date-time" },
+        "tool": { "type": "string" },
+        "engineVersion": { "type": "string" }
+      }
+    },
+    "requests": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^req-\\d{4}$": { "$ref": "#/$defs/request" }
+      }
+    }
+  },
+  "$defs": {
+    "state": {
+      "type": "string",
+      "enum": [
+        "INTAKE",
+        "TRIAGED",
+        "SPECCED",
+        "ADR_PROPOSED",
+        "DECIDED",
+        "PLANNED",
+        "PLAN_OK",
+        "IMPLEMENTING",
+        "VERIFYING",
+        "DONE",
+        "REVISING_ADR",
+        "REVISING_SPEC",
+        "BLOCKED"
+      ]
+    },
+    "tier": { "type": ["string", "null"], "enum": ["TRIVIAL", "STANDARD", "DEEP", null] },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "slug", "title", "tier", "status", "openQuestions", "createdAt", "updatedAt", "adrs", "overrides", "config", "runtime", "history"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^req-\\d{4}$" },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "minLength": 1, "maxLength": 60 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "tier": { "$ref": "#/$defs/tier" },
+        "status": { "$ref": "#/$defs/state" },
+        "openQuestions": { "type": "integer", "minimum": 0 },
+        "blockedReason": { "type": ["string", "null"] },
+        "awaiting": { "type": ["string", "null"], "enum": ["G1", "G2", "G3", null] },
+        "escalatedFrom": { "type": "string", "enum": ["TRIVIAL", "STANDARD", "DEEP"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "adrs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "status"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^adr-\\d{4}$" },
+              "status": { "type": "string", "enum": ["proposed", "accepted", "superseded", "rejected"] },
+              "governs": { "type": "array", "items": { "type": "string" } },
+              "title": { "type": "string", "maxLength": 200 },
+              "acceptedAt": { "type": ["string", "null"], "format": "date-time" }
+            }
+          }
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "reason", "by", "ts", "scope", "consumedAt"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^ovr-\\d+$" },
+              "glob": { "type": ["string", "null"] },
+              "path": { "type": ["string", "null"] },
+              "adr": { "type": ["string", "null"], "pattern": "^adr-\\d{4}$" },
+              "reason": { "type": "string", "minLength": 1 },
+              "by": { "type": "string" },
+              "ts": { "type": "string", "format": "date-time" },
+              "scope": { "type": "string", "enum": ["once", "session", "request"] },
+              "consumedAt": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["enforcement", "tigerLintBlocking"],
+          "properties": {
+            "enforcement": { "type": "string", "enum": ["warn", "deny"] },
+            "tigerLintBlocking": { "type": "boolean" }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["firstDenialSeen"],
+          "properties": {
+            "firstDenialSeen": { "type": "boolean" }
+          }
+        },
+        "history": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to", "at", "by"],
+            "properties": {
+              "from": {
+                "anyOf": [{ "$ref": "#/$defs/state" }, { "type": "null" }]
+              },
+              "to": { "$ref": "#/$defs/state" },
+              "at": { "type": "string", "format": "date-time" },
+              "by": { "type": "string" },
+              "gate": { "type": ["string", "null"], "enum": ["G1", "G2", "G3", null] },
+              "override": { "type": ["string", "null"] },
+              "note": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

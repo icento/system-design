@@ -1,0 +1,8 @@
+# Deterministic artifacts: force LF so golden/byte-idempotent tests are stable
+# across platforms and git-checkout normalization.
+*.md    text eol=lf
+*.json  text eol=lf
+*.mjs   text eol=lf
+*.sh    text eol=lf
+*.tmpl  text eol=lf
+*.yml   text eol=lf

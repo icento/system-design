@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://icento.dev/system-design/adr.frontmatter.schema.json",
+  "title": "ADR frontmatter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "title", "status", "date", "governs", "principles", "decisionQuestion", "choice"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^adr-\\d{4}$" },
+    "kind": { "const": "adr" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "status": { "type": "string", "enum": ["proposed", "accepted", "superseded", "rejected"] },
+    "date": { "type": "string", "format": "date" },
+    "request": { "type": ["string", "null"], "pattern": "^req-\\d{4}$" },
+    "governs": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 200 } },
+    "principles": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^(aposd|tiger|house)-[a-z0-9]+(-[a-z0-9]+)*$" }
+    },
+    "decisionQuestion": { "type": "string", "minLength": 1, "maxLength": 280 },
+    "choice": { "type": "string", "minLength": 1, "maxLength": 400 },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "forbids": { "type": "array", "items": { "type": "string", "maxLength": 200 } },
+        "requires": { "type": "array", "items": { "type": "string", "maxLength": 200 } }
+      }
+    },
+    "supersedes": { "type": ["string", "null"], "pattern": "^adr-\\d{4}$" }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "system-design",
+  "version": "0.1.0",
+  "description": "A Claude Code plugin that orchestrates request -> SPEC -> principle-derived ADRs -> reviewed PLAN -> implement -> verify, with a deterministic zero-dependency Node engine as the sole state writer and gatekeeper.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18.3"
+  },
+  "scripts": {
+    "test": "node test/run.mjs",
+    "test:coverage-map": "node test/run.mjs --coverage-map",
+    "selfcheck": "node bin/engine.mjs selfcheck"
+  },
+  "bin": {
+    "sd-engine": "bin/engine.mjs"
+  },
+  "license": "MIT"
+}

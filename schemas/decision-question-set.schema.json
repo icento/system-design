@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://icento.dev/system-design/decision-question-set.schema.json",
+  "title": "principle-architect -> /sd:decide handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "generated_at", "questions"],
+  "properties": {
+    "request_id": { "type": "string", "pattern": "^req-\\d{4}$" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "note": { "type": "string", "maxLength": 280 },
+    "questions": {
+      "type": "array",
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "staged_adr_id", "entity", "question", "options", "recommended_option_index", "principle_ids"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^Q\\d+$" },
+          "staged_adr_id": { "type": "string", "pattern": "^adr-\\d{4}$" },
+          "entity": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "question": { "type": "string", "minLength": 1, "maxLength": 280 },
+          "options": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["label", "summary"],
+              "properties": {
+                "label": { "type": "string", "minLength": 1, "maxLength": 40 },
+                "summary": { "type": "string", "minLength": 1, "maxLength": 200 }
+              }
+            }
+          },
+          "recommended_option_index": { "type": "integer", "minimum": 0, "maximum": 3 },
+          "principle_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "pattern": "^(aposd|tiger|house)-[a-z0-9]+(-[a-z0-9]+)*$" }
+          }
+        }
+      }
+    }
+  }
+}

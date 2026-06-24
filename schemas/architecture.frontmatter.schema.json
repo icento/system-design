@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://icento.dev/system-design/architecture.frontmatter.schema.json",
+  "title": "generated ARCHITECTURE.md frontmatter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "generated", "generator", "generatedAt", "sourceHash", "doNotEdit"],
+  "properties": {
+    "kind": { "const": "architecture" },
+    "generated": { "const": true },
+    "generator": { "type": "string" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "sourceHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "adrCount": { "type": "integer", "minimum": 0 },
+    "doNotEdit": { "const": true }
+  }
+}

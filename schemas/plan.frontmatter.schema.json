@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://icento.dev/system-design/plan.frontmatter.schema.json",
+  "title": "PLAN frontmatter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "status", "steps"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^req-\\d{4}$" },
+    "kind": { "const": "plan" },
+    "status": { "type": "string", "enum": ["draft", "in_review", "approved"] },
+    "reviewedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "verdict", "blockerCount", "at"],
+      "properties": {
+        "gate": { "const": "G3" },
+        "verdict": { "type": "string", "enum": ["PASS", "REVISE"] },
+        "blockerCount": { "type": "integer", "minimum": 0 },
+        "at": { "type": "string", "format": "date-time" },
+        "subagent": { "type": "string" }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "intent", "satisfies", "files", "tests", "status"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^STEP-\\d{3}$" },
+          "intent": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "satisfies": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^REQ-\\d{4}-\\d{2}$" } },
+          "files": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+          "tests": { "type": "array", "items": { "type": "string", "pattern": "^.+::.+$" } },
+          "adrs": { "type": "array", "items": { "type": "string", "pattern": "^adr-\\d{4}$" } },
+          "status": { "type": "string", "enum": ["todo", "doing", "done"] }
+        }
+      }
+    }
+  }
+}

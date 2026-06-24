@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://icento.dev/system-design/principles-index.frontmatter.schema.json",
+  "title": "generated PRINCIPLES.md index frontmatter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "generated", "count", "sources", "precedence", "doNotEdit"],
+  "properties": {
+    "kind": { "const": "principles-index" },
+    "generated": { "const": true },
+    "count": { "type": "integer", "minimum": 0 },
+    "sources": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+    "precedence": { "type": "array", "items": { "type": "string" } },
+    "doNotEdit": { "const": true }
+  }
+}

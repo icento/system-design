@@ -1,0 +1,13 @@
+{
+  "name": "icento-marketplace",
+  "owner": { "name": "icento", "email": "ky.dangthe@icento.com.vn" },
+  "plugins": [
+    {
+      "name": "sd",
+      "source": "./",
+      "description": "System-Design workflow: request -> SPEC -> principle-derived ADRs -> reviewed PLAN -> implement -> verify, governed by a deterministic engine.",
+      "version": "0.1.0",
+      "keywords": ["workflow", "spec", "adr", "architecture", "governance"]
+    }
+  ]
+}

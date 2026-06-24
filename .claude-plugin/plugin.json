@@ -1,0 +1,13 @@
+{
+  "name": "sd",
+  "version": "0.1.0",
+  "description": "Orchestrates a governed Claude development workflow: request -> SPEC -> principle-derived ADRs -> reviewed PLAN -> implement -> verify, with a deterministic zero-dependency engine as the sole state writer and a layered enforcement net.",
+  "author": { "name": "icento", "email": "ky.dangthe@icento.com.vn" },
+  "license": "MIT",
+  "homepage": "https://github.com/icento/system-design",
+  "keywords": ["workflow", "spec", "adr", "architecture", "plan", "review", "tigerstyle", "aposd", "governance"],
+  "commands": "./commands",
+  "skills": "./skills",
+  "agents": "./agents",
+  "hooks": "./hooks/hooks.json"
+}

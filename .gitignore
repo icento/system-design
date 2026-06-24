@@ -1,0 +1,22 @@
+# This plugin has zero npm dependencies; node_modules should never appear.
+node_modules/
+
+# OS / editor noise
+.DS_Store
+*.swp
+.vscode/
+
+# Engine runtime artifacts (these live in a *user* repo, never in the plugin repo;
+# ignored here defensively in case the plugin dir is ever used as a workflow repo).
+docs/.state.json
+docs/.state.bak
+docs/.state.tmp
+docs/.state.lock
+docs/.governs-index.json
+docs/.arch-hash
+docs/.architecture-stale
+docs/ARCHITECTURE.md
+requests/
+
+# Scratch
+*.log
