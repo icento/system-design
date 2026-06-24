@@ -17,6 +17,14 @@ match the plugin manifest version (`engine selfcheck` enforces this on release).
   `docs/PRINCIPLES.md` regenerated. All four are advisory/recommended, so they add ADR
   decision questions without introducing a new hard gate.
 
+### Fixed
+- `/plugin marketplace add icento/system-design` failed with "Marketplace file not
+  found": moved the catalog from the repo root to `.claude-plugin/marketplace.json`,
+  the path Claude Code resolves (the `source:"./"` entry still points at the repo root).
+- `plugin.json` `agents` field rejected by `claude plugin validate` ("Invalid input"):
+  it requires an array of individual agent file paths, not a directory string. Now
+  `claude plugin validate` passes clean, and the marketplace manifest has a description.
+
 ## [0.1.0] - 2026-06-24
 
 ### Added

@@ -8,6 +8,6 @@
   "keywords": ["workflow", "spec", "adr", "architecture", "plan", "review", "tigerstyle", "aposd", "governance"],
   "commands": "./commands",
   "skills": "./skills",
-  "agents": "./agents",
+  "agents": ["./agents/implementer.md", "./agents/plan-reviewer.md", "./agents/principle-architect.md", "./agents/qa-verifier.md"],
   "hooks": "./hooks/hooks.json"
 }

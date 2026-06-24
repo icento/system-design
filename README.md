@@ -41,7 +41,7 @@ git clone https://github.com/icento/system-design
 ```
 
 `/plugin marketplace add` accepts an `owner/repo` shorthand or a full URL; the
-marketplace catalog lives in [`marketplace.json`](marketplace.json). Requires Node
+marketplace catalog lives in [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json). Requires Node
 ≥ 18.3 on your PATH (the engine is zero-dependency).
 
 Then, in a repo you want to work in:

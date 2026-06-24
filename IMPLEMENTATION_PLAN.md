@@ -66,8 +66,8 @@ Auto-drive `/sd:run`; a separate `INDEX.json` state index; **bidirectional** sup
 ```
 system-design/
 ├── .claude-plugin/
-│   └── plugin.json                         ■ manifest (only file in here)
-├── marketplace.json                        ■ marketplace catalog entry
+│   ├── plugin.json                         ■ manifest
+│   └── marketplace.json                    ■ marketplace catalog entry (Claude Code requires it here)
 ├── README.md                               ■ tour, install, lifecycle diagram, enforcement table
 ├── LICENSE                                 ■ MIT
 ├── CHANGELOG.md                            ■ keep-a-changelog; top version == manifest version
@@ -457,8 +457,8 @@ Zero-dep: `node:test` + `node:assert/strict` only. `npm test` → `node test/run
 - [ ] `engine selfcheck` is the single machine-checkable polish gate. *(File-purpose/acceptance-criteria coverage is a human review-checklist item in `POLISH-CHECKLIST.md`, not a machine gate.)*
 
 ### `claude plugin validate` + marketplace
-- Manifest minimal fields: `name, version, description, author, license, homepage, keywords, commands:"./commands", skills:"./skills", agents:"./agents", hooks:"./hooks/hooks.json"`. No `mcpServers`.
-- `.claude-plugin/plugin.json` is the only file in `.claude-plugin/`. `marketplace.json` `source:"./"`. Plugin repo is a git repo (init'd in M0).
+- Manifest minimal fields: `name, version, description, author, license, homepage, keywords, commands:"./commands", skills:"./skills", agents:[<file paths>], hooks:"./hooks/hooks.json"`. The `agents` field requires an array of individual agent file paths (a directory string fails `claude plugin validate`). No `mcpServers`.
+- `.claude-plugin/` holds both `plugin.json` and `marketplace.json` (Claude Code resolves `/plugin marketplace add` against `.claude-plugin/marketplace.json`). The catalog entry's `source:"./"` resolves to the repo root (parent of `.claude-plugin/`), where the plugin content dirs live. Plugin repo is a git repo (init'd in M0).
 - CI runs `claude plugin validate` (non-fatal-guarded) **and** `engine selfcheck` as an independent backstop. Install: `/plugin marketplace add ./` → `/plugin install system-design`.
 
 ---

@@ -1,5 +1,6 @@
 {
   "name": "icento-marketplace",
+  "description": "icento's Claude Code plugins, including the system-design (/sd:) governed development workflow.",
   "owner": { "name": "icento", "email": "ky.dangthe@icento.com.vn" },
   "plugins": [
     {
