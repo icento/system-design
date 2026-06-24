@@ -8,9 +8,10 @@ import { resolve } from 'node:path';
 import { engine, PLUGIN_ROOT, tmpDir, cleanup } from '../helpers.mjs';
 
 test('selfcheck passes on the real plugin', () => {
+  const manifestVersion = JSON.parse(readFileSync(resolve(PLUGIN_ROOT, '.claude-plugin', 'plugin.json'), 'utf8')).version;
   const r = engine(['selfcheck', '--plugin-root', PLUGIN_ROOT], { json: true });
   assert.equal(r.code, 0, r.stderr);
-  assert.equal(r.json.version, '0.1.0');
+  assert.equal(r.json.version, manifestVersion);
 });
 
 test('selfcheck fails (7) on a schema with an unsupported keyword', () => {

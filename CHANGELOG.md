@@ -6,6 +6,8 @@ match the plugin manifest version (`engine selfcheck` enforces this on release).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-24
+
 ### Added
 - Four `house` decision principles distilled from the ponytail lazy-senior-dev
   discipline: `house-comprehend-first` (trace the real flow before choosing a solution
