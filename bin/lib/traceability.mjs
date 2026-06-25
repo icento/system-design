@@ -27,9 +27,14 @@ export function computeMatrix({ specRequirements = [], planSteps = [], testIndex
       else coverByReq.get(r).push(step.id);
     }
     if (testIndex) {
+      // A dangling test ref is only a hole for a `done` step (per the contract above):
+      // a not-yet-done step whose test file isn't written yet is flagged via stepNotDone,
+      // not as a missing-test ref.
       if (step.status !== 'done') stepNotDone.push(step.id);
-      for (const t of step.tests ?? []) {
-        if (!testIndex.has(t)) danglingTestRef.push({ step: step.id, testRef: t });
+      else {
+        for (const t of step.tests ?? []) {
+          if (!testIndex.has(t)) danglingTestRef.push({ step: step.id, testRef: t });
+        }
       }
     }
   }

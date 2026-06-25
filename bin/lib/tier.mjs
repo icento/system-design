@@ -6,13 +6,29 @@
 
 export const TIERS = ['TRIVIAL', 'STANDARD', 'DEEP'];
 
-// Recommend a tier from intake signals. Returns { tier, reasons[] }.
+// The tier the intake SIGNALS alone recommend, ignoring any caller hint. This is the
+// disciplined recommendation; the hint is a prior, not an override of it.
 //   touchesAdr / addsDep  -> hard DEEP signals (architecture is in play)
 //   files                 -> rough size signal
-//   hint                  -> caller's prior belief (TRIVIAL|STANDARD|DEEP)
+function signalTier({ touchesAdr = false, addsDep = false, files } = {}) {
+  let tier = 'STANDARD';
+  if (typeof files === 'number') {
+    if (files <= 1) tier = 'TRIVIAL';
+    else if (files > 5) tier = 'STANDARD';
+  }
+  if (touchesAdr || addsDep) tier = 'DEEP'; // hard DEEP signals win over size
+  return tier;
+}
+
+// Recommend a tier from intake signals plus an optional caller hint. Returns
+// { tier, reasons[], signalTier } where `signalTier` is the hint-free recommendation.
+// The hint sets a baseline but never silently buries the signals: when it disagrees
+// with `signalTier`, `reasons` says so (and hard DEEP signals still force DEEP), so a
+// hint stops being a rubber stamp and the disagreement is surfaced to confirm.
 export function classifyTier({ touchesAdr = false, addsDep = false, files, hint } = {}) {
   const reasons = [];
   let tier = 'STANDARD';
+  const signal = signalTier({ touchesAdr, addsDep, files });
 
   if (hint && TIERS.includes(String(hint).toUpperCase())) {
     tier = String(hint).toUpperCase();
@@ -39,8 +55,14 @@ export function classifyTier({ touchesAdr = false, addsDep = false, files, hint 
     reasons.push('adds a new dependency -> DEEP');
   }
 
+  // Surface a hint that disagrees with the signal-based recommendation.
+  const hintTier = hint && TIERS.includes(String(hint).toUpperCase()) ? String(hint).toUpperCase() : null;
+  if (hintTier && hintTier !== signal) {
+    reasons.push(`signals suggest ${signal}; hint says ${hintTier} — confirm`);
+  }
+
   if (reasons.length === 0) reasons.push('default STANDARD');
-  return { tier, reasons };
+  return { tier, reasons, signalTier: signal };
 }
 
 // Raise `tier` to at least `floor` (never lower).

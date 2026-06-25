@@ -51,6 +51,7 @@ test('verify fails while steps are not done, passes once done; DONE follows', ()
     assert.equal(v.code, 0, JSON.stringify(v.json));
 
     engine(['advance', '--id', 'req-0001', '--to', 'VERIFYING'], { root });
+    touch(root, 'requests/req-0001/qa/qa.verdict.json', JSON.stringify({ overall: 'PASS' }));
     assert.equal(engine(['advance', '--id', 'req-0001', '--to', 'DONE'], { root }).code, 0);
   } finally {
     cleanup(root);
@@ -74,6 +75,25 @@ test('DONE is refused when a declared test file is missing', () => {
   }
 });
 
+test('DONE is refused on a FAILED QA verdict and allowed once it PASSES', () => {
+  const root = toImplementing();
+  try {
+    engine(['step-done', '--id', 'req-0001', '--step', '1'], { root });
+    engine(['step-done', '--id', 'req-0001', '--step', '2'], { root });
+    engine(['advance', '--id', 'req-0001', '--to', 'VERIFYING'], { root });
+    // A FAIL verdict must block DONE even though traceability is clean.
+    touch(root, 'requests/req-0001/qa/qa.verdict.json', JSON.stringify({ overall: 'FAIL' }));
+    const blocked = engine(['advance', '--id', 'req-0001', '--to', 'DONE'], { root });
+    assert.equal(blocked.code, 5);
+    assert.ok(blocked.json.missing.some((m) => /QA verdict is FAIL/.test(m)));
+    // Flipping the verdict to PASS lets it through (the engine, not the skill, enforces this).
+    touch(root, 'requests/req-0001/qa/qa.verdict.json', JSON.stringify({ overall: 'PASS' }));
+    assert.equal(engine(['advance', '--id', 'req-0001', '--to', 'DONE'], { root }).code, 0);
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('trace renders the matrix and gate-done reflects readiness', () => {
   const root = toImplementing();
   try {
@@ -83,6 +103,8 @@ test('trace renders the matrix and gate-done reflects readiness', () => {
     assert.equal(engine(['gate-done', '--id', 'req-0001'], { root }).code, 5); // steps not done yet
     engine(['step-done', '--id', 'req-0001', '--step', '1'], { root });
     engine(['step-done', '--id', 'req-0001', '--step', '2'], { root });
+    assert.equal(engine(['gate-done', '--id', 'req-0001'], { root }).code, 5); // QA verdict not written yet
+    touch(root, 'requests/req-0001/qa/qa.verdict.json', JSON.stringify({ overall: 'PASS' }));
     assert.equal(engine(['gate-done', '--id', 'req-0001'], { root }).code, 0);
   } finally {
     cleanup(root);

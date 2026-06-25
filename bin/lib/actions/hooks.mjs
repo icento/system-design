@@ -63,16 +63,51 @@ function relPath(root, filePath) {
   return rel.split('\\').join('/');
 }
 
-// Most-recent non-terminal request (the one the user is actively working on).
-function activeRequest(state) {
-  const open = Object.values(state.requests).filter((r) => r.status !== 'DONE');
-  open.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  return open[0] ?? null;
+// Open (non-DONE) requests, deterministically ordered: most-recently-updated first,
+// ties broken by id descending. The id tie-break makes the comparator transitive —
+// the old `a<b?1:-1` returned -1 for BOTH (a,b) and (b,a) on equal timestamps, so the
+// chosen request was sort-implementation-dependent.
+function sortedOpen(state) {
+  return Object.values(state.requests)
+    .filter((r) => r.status !== 'DONE')
+    .sort((a, b) => {
+      if (a.updatedAt !== b.updatedAt) return a.updatedAt < b.updatedAt ? 1 : -1;
+      return a.id < b.id ? 1 : a.id > b.id ? -1 : 0;
+    });
+}
+
+// Choose the request whose edit gate governs THIS file. Resolving by file (not merely
+// "the most-recently-updated open request") is what keeps the gate sound when several
+// requests are open: registering or touching a second request must never silently
+// disable the in-flight request's PLAN-scope or DEEP-incomplete protection — which the
+// old single-active heuristic did, because a newer request became "active" and its
+// (INTAKE) gate let everything through.
+function gateTarget(state, root, rel) {
+  const open = sortedOpen(state);
+  if (open.length === 0) return null;
+  const implementing = open.filter((r) => r.status === 'IMPLEMENTING');
+  // 1) an IMPLEMENTING request whose PLAN scope already covers this file owns the edit.
+  const owner = implementing.find((r) => inScope(planScope(root, r.id), rel));
+  if (owner) return owner;
+  // 2) else any IMPLEMENTING request still governs it (the edit is out of its scope).
+  if (implementing.length) return implementing[0];
+  // 3) a DEEP request whose architecture is undecided blocks source edits broadly.
+  const deepPending = open.find(
+    (r) => r.tier === 'DEEP' && (!existsSync(requestPaths(root, r.id).spec) || (r.adrs ?? []).some((a) => a.status === 'proposed')),
+  );
+  if (deepPending) return deepPending;
+  // 4) a non-DEEP request that governs this file (auto-escalation candidate).
+  if (governedBy(readGovernsIndex(root), rel).length) {
+    const gov = open.find((r) => r.tier !== 'DEEP');
+    if (gov) return gov;
+  }
+  // 5) deterministic fallback.
+  return open[0];
 }
 
 // Decide ask-vs-deny under the warn-first policy, persisting any pending state
 // mutation and firstDenialSeen together. Returns the payload.
-function gateDecision(ctx, state, req, reason, mutated = false) {
+function gateDecision(ctx, state, req, reason, mutated = false, overridable = true) {
   const warnOnly = (req.config?.enforcement ?? 'warn') === 'warn';
   if (warnOnly) {
     if (mutated) trySave(ctx, state);
@@ -81,7 +116,10 @@ function gateDecision(ctx, state, req, reason, mutated = false) {
   if (!req.runtime.firstDenialSeen) {
     req.runtime.firstDenialSeen = true;
     trySave(ctx, state); // persists firstDenialSeen + any mutation atomically
-    return ask(`${reason} (first denial — confirm or run /sd:override)`);
+    // /sd:override only unblocks the IMPLEMENTING PLAN-scope gate; the DEEP-incomplete
+    // gate is cleared by writing the SPEC / deciding the ADRs, so don't point there.
+    const remedy = overridable ? 'confirm or run /sd:override' : 'confirm, or resolve the above first';
+    return ask(`${reason} (first denial — ${remedy})`);
   }
   if (mutated) trySave(ctx, state);
   return deny(reason);
@@ -125,7 +163,7 @@ function handleHookGate(ctx) {
 
     if (!isWorkflowRepo(ctx.root)) return { hook: ALLOW };
     const { state } = load(ctx.root, ctx.opts);
-    const req = activeRequest(state);
+    const req = gateTarget(state, ctx.root, rel);
     if (!req) return { hook: ALLOW };
 
     // 2) workflow artifacts are managed by commands/the engine -> allow.
@@ -149,7 +187,7 @@ function handleHookGate(ctx) {
       const proposed = (req.adrs ?? []).some((a) => a.status === 'proposed');
       if (noSpec || proposed) {
         const why = noSpec ? `${req.id} has no SPEC yet` : `${req.id} has ADRs still proposed (decide them first)`;
-        return { hook: gateDecision(ctx, state, req, `editing ${rel}: ${why}`, mutated) };
+        return { hook: gateDecision(ctx, state, req, `editing ${rel}: ${why}`, mutated, false) };
       }
     }
 
@@ -224,7 +262,7 @@ function handleHookTigerLint(ctx) {
 
     if (isWorkflowRepo(ctx.root)) {
       const { state } = load(ctx.root, ctx.opts);
-      const req = activeRequest(state);
+      const req = gateTarget(state, ctx.root, rel);
       if (req?.config?.tigerLintBlocking) {
         const out = requestPaths(ctx.root, req.id).tigerLint;
         if (!existsSync(requestPaths(ctx.root, req.id).qaDir)) mkdirSync(requestPaths(ctx.root, req.id).qaDir, { recursive: true });
@@ -245,7 +283,7 @@ function handleHookActiveReq(ctx) {
   try {
     if (!isWorkflowRepo(ctx.root)) return { hook: ALLOW };
     const { state } = load(ctx.root, ctx.opts);
-    const req = activeRequest(state);
+    const req = sortedOpen(state)[0] ?? null;
     if (!req) return { hook: ALLOW };
     const ctxLine = `[system-design] active request ${req.id} [${req.status}] tier=${req.tier ?? '?'}${req.awaiting ? ' awaiting ' + req.awaiting : ''} — "${req.title}"`;
     return { hook: { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: ctxLine } } };

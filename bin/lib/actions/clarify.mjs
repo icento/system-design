@@ -66,7 +66,7 @@ function handleClassify(ctx) {
   if (!id) throw errUsage('classify requires --id');
   const { state, req } = loadReq(root, id, opts);
   const filesArg = ctx.values.files !== undefined ? Number(ctx.values.files) : undefined;
-  const { tier, reasons } = classifyTier({
+  const { tier, reasons, signalTier } = classifyTier({
     touchesAdr: ctx.values['touches-adr'] === true,
     addsDep: ctx.values['adds-dep'] === true,
     files: Number.isFinite(filesArg) ? filesArg : undefined,
@@ -81,7 +81,11 @@ function handleClassify(ctx) {
     save(root, state, opts);
     applied = true;
   }
-  return ok({ id, recommended: tier, reasons, applied }, `${id}: recommend ${tier} (${reasons.join('; ')})${applied ? ' [applied]' : ''}`);
+  const hintDisagrees = signalTier !== tier;
+  return ok(
+    { id, recommended: tier, signalTier, hintDisagrees, reasons, applied },
+    `${id}: recommend ${tier} (${reasons.join('; ')})${applied ? ' [applied]' : ''}`,
+  );
 }
 
 // retier --id [--to TIER | --restore]  (correct an over-classification, or undo an

@@ -6,6 +6,47 @@ match the plugin manifest version (`engine selfcheck` enforces this on release).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-25
+
+### Fixed
+- **Multi-request edit gate no longer bypassable.** The PreToolUse gate chose a single
+  "active" request by most-recently-updated, so registering (or merely touching) a second
+  request silently disabled the in-flight request's PLAN-scope / DEEP-incomplete
+  protection. The gate now resolves the governing request **from the file being edited**
+  (an IMPLEMENTING request whose PLAN scope covers it, else any IMPLEMENTING request, else
+  a DEEP undecided request, else a governing request), and the tie-break comparator is
+  transitive.
+- **The engine now enforces the final QA gate.** Reaching `DONE` (and `gate-done`/`verify`
+  for non-TRIVIAL requests) requires `qa/qa.verdict.json` with `overall: PASS`, mirroring
+  how `PLAN_OK` requires a `PASS` plan-review. Previously a `FAIL` verdict only blocked
+  DONE if the `/sd:verify` skill chose to route a loop-back.
+- **Global flags work in any position.** `engine --project-dir D --json status` (the form
+  the `ENGINE` command macro teaches) now resolves the subcommand just like
+  `engine status --project-dir D --json`; a flags-only invocation gives a position-aware
+  EUSAGE instead of `unknown command "--project-dir"`.
+- **`gate --json` reports a code matching the exit code.** It previously emitted
+  `{ ok:false, code:0 }` while the process exited 5/6, violating the `--json` contract.
+- **`engine await --gate` validates reachability** — it refuses to record a cursor for a
+  gate the request has already passed, or on a terminal request.
+
+### Changed
+- `classify` now reports the hint-free `signalTier` alongside the recommendation and flags
+  a `hintDisagrees` case (with a `signals suggest X; hint says Y — confirm` reason), so a
+  `--hint` is a prior, not a rubber stamp.
+- `accept-adr` / `decide` now report `architectureStale` and tell you to run `arch-sync`
+  **at decision time**, instead of letting the staleness ambush the final `verify`.
+- `context`/`status` now include a deterministic `nextCommand` computed by the engine, so
+  the next `/sd:` step can't drift from the lifecycle graph.
+- The `principle-architect` agent prompt now states the ADR frontmatter length caps
+  (`choice` ≤400, `decisionQuestion` ≤280, `title`/glob/constraint items ≤200) and
+  self-validates each staged ADR with `validate-doc --kind adr` before returning.
+- The DEEP-incomplete edit-gate denial no longer points at `/sd:override` (which does not
+  apply to that gate); it directs you to write the SPEC / decide the ADRs.
+
+### Removed
+- The orphaned `session` override scope (no session boundary existed, so it never expired
+  and behaved like a permanent `request` scope). `--scope` is now `once|request`.
+
 ## [0.3.0] - 2026-06-24
 
 ### Changed

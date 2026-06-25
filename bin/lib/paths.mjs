@@ -68,6 +68,21 @@ function readPlanReviewVerdict(root, req) {
   }
 }
 
+// Read the QA verdict JSON if present and well-formed. Returns { overall } or null
+// (null also when the file is malformed, so a corrupt verdict cannot pass the gate).
+// The /sd:verify skill writes this from the read-only qa-verifier's report.
+export function readQaVerdict(root, req) {
+  const p = requestPaths(root, req.id).qaVerdict;
+  if (!existsSync(p)) return null;
+  try {
+    const v = JSON.parse(readFileSync(p, 'utf8'));
+    if (v && (v.overall === 'PASS' || v.overall === 'FAIL')) return { overall: v.overall };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Resolve a set of `path::name` test refs to those that actually exist (file
 // present AND the name appears in it — the v1 honest scope: existence + name grep).
 export function resolveTestIndex(root, planSteps) {
@@ -105,6 +120,7 @@ export function buildPreconditions(root, extra = {}) {
     specExists: (req) => existsSync(requestPaths(root, req.id).spec),
     planExists: (req) => existsSync(requestPaths(root, req.id).plan),
     planReviewVerdict: (req) => readPlanReviewVerdict(root, req),
+    qaVerdict: (req) => readQaVerdict(root, req),
     traceabilityComplete: (req) => traceabilityResult(root, req),
     archStale: () => existsSync(resolve(docsPaths(root).docs, '.architecture-stale')),
     ...extra,

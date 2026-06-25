@@ -7,7 +7,7 @@
       "name": "sd",
       "source": "./",
       "description": "System-Design workflow: request -> SPEC -> principle-derived ADRs -> reviewed PLAN -> implement -> verify, governed by a deterministic engine.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "keywords": ["workflow", "spec", "adr", "architecture", "governance"]
     }
   ]

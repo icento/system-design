@@ -18,6 +18,7 @@ export function makePreconditions(deps = {}) {
     specExists = () => false,
     planExists = () => false,
     planReviewVerdict = () => null, // -> { verdict:'PASS'|'REVISE', blockerCount:int } | null
+    qaVerdict = () => ({ overall: 'PASS', note: 'deferred' }), // -> { overall:'PASS'|'FAIL' } | null
     // injected later (default pass-with-note until M5/M6)
     traceabilityComplete = () => ({ ok: true, note: 'deferred' }),
     archStale = () => false,
@@ -92,13 +93,21 @@ export function makePreconditions(deps = {}) {
       return { ok: missing.length === 0, missing };
     },
 
-    // Both predicates injected; defaults pass-with-note until M5 (traceability) and
-    // M6 (arch staleness) wire in.
+    // Predicates injected; defaults pass-with-note until traceability (M5), arch
+    // staleness (M6), and the QA verdict are wired in (paths.mjs). The QA gate makes
+    // the engine — not the /sd:verify skill — the thing that refuses DONE on a FAILED
+    // QA verdict, mirroring how PLAN_OK refuses on a REVISE plan-review. TRIVIAL skips
+    // it (no qa-verifier runs for the CHANGELOG-line fast path).
     DONE(req) {
       const missing = [];
       const trace = traceabilityComplete(req);
       if (!trace.ok) missing.push(`traceability incomplete: ${(trace.holes ?? []).join('; ') || 'holes present'}`);
       if (archStale()) missing.push('ARCHITECTURE.md is stale; run `engine arch-sync` (no flags — --check only reports) to regenerate it');
+      if (req.tier !== 'TRIVIAL') {
+        const qa = qaVerdict(req);
+        if (!qa) missing.push('qa/qa.verdict.json missing or invalid (run /sd:verify)');
+        else if (qa.overall !== 'PASS') missing.push(`QA verdict is ${qa.overall}, not PASS`);
+      }
       return { ok: missing.length === 0, missing };
     },
   };

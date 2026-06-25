@@ -76,11 +76,14 @@ export function ok(json = {}, human = '') {
   return { code: EXIT.OK, json, human };
 }
 
-// Render a successful Result.
+// Render a successful Result. `code` defaults to OK, but a non-throwing handler may
+// return a non-zero code (e.g. `gate`, a dry-run that reports an unmet/illegal edge):
+// the --json payload must carry that real code so callers branching on { ok, code }
+// agree with the process exit code, never `code:0` while the process exits 5/6.
 export function renderOk(result, opts, out = process.stdout) {
-  const { json = {}, human = '' } = result;
+  const { code = EXIT.OK, json = {}, human = '' } = result;
   if (opts.json) {
-    out.write(JSON.stringify({ ok: true, code: EXIT.OK, ...json }) + '\n');
+    out.write(JSON.stringify({ ok: code === EXIT.OK, code, ...json }) + '\n');
   } else if (!opts.quiet && human) {
     out.write(human.endsWith('\n') ? human : human + '\n');
   }

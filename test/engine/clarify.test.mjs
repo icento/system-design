@@ -55,6 +55,26 @@ test('classify recommends a tier; --apply only in INTAKE/TRIAGED', () => {
   }
 });
 
+test('classify reports the signal-based tier and flags a disagreeing hint', () => {
+  const root = initRepo();
+  try {
+    engine(['register', '--title', 'H', '--slug', 'h'], { root });
+    // hint=DEEP with no signals: recommended honors the hint, but the signal-based
+    // recommendation (STANDARD) is still reported and the disagreement is surfaced.
+    const r = engine(['classify', '--id', 'req-0001', '--hint', 'DEEP'], { root });
+    assert.equal(r.json.recommended, 'DEEP');
+    assert.equal(r.json.signalTier, 'STANDARD');
+    assert.equal(r.json.hintDisagrees, true);
+    assert.ok(r.json.reasons.some((x) => /signals suggest STANDARD; hint says DEEP/.test(x)));
+    // A hint that agrees with the signals is not flagged.
+    const agree = engine(['classify', '--id', 'req-0001', '--hint', 'STANDARD'], { root });
+    assert.equal(agree.json.signalTier, 'STANDARD');
+    assert.equal(agree.json.hintDisagrees, false);
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('retier corrects a tier past TRIAGED where classify --apply is refused', () => {
   const root = initRepo();
   try {

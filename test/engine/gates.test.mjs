@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { applyTransition, evaluateTransition } from '../../bin/lib/transition.mjs';
 import { GRAPH, STATES } from '../../bin/lib/gate.mjs';
 import { makePreconditions, evaluatePrecondition } from '../../bin/lib/preconditions.mjs';
-import { engine, initRepo, cleanup } from '../helpers.mjs';
+import { engine, initRepo, touch, cleanup } from '../helpers.mjs';
 
 function baseReq(status = 'INTAKE') {
   const now = '2026-01-01T00:00:00.000Z';
@@ -181,6 +181,81 @@ test('engine unknown subcommand/flag => EUSAGE(2)', () => {
   try {
     assert.equal(engine(['frobnicate'], { root }).code, 2);
     assert.equal(engine(['status', '--nope'], { root }).code, 2);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('gate --json reports a code matching the exit code (not a hardcoded 0)', () => {
+  const root = initRepo();
+  try {
+    engine(['register', '--title', 'G', '--slug', 'g'], { root }); // INTAKE, no tier
+    // legal edge, precondition unmet (no tier) => EGATE 5; JSON code must equal exit code.
+    const unmet = engine(['gate', '--id', 'req-0001', '--to', 'TRIAGED'], { root });
+    assert.equal(unmet.code, 5);
+    assert.equal(unmet.json.code, 5);
+    assert.equal(unmet.json.ok, false);
+    // illegal edge => EILLEGAL 6.
+    const illegal = engine(['gate', '--id', 'req-0001', '--to', 'DONE'], { root });
+    assert.equal(illegal.code, 6);
+    assert.equal(illegal.json.code, 6);
+    // a satisfiable edge => OK 0.
+    engine(['register', '--title', 'G2', '--slug', 'g2', '--tier', 'STANDARD'], { root });
+    const okGate = engine(['gate', '--id', 'req-0002', '--to', 'TRIAGED'], { root });
+    assert.equal(okGate.code, 0);
+    assert.equal(okGate.json.code, 0);
+    assert.equal(okGate.json.ok, true);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('context surfaces a deterministic next command for each state', () => {
+  const root = initRepo();
+  try {
+    engine(['register', '--title', 'N', '--slug', 'n', '--tier', 'STANDARD'], { root });
+    assert.equal(engine(['context', '--id', 'req-0001'], { root }).json.nextCommand, '/sd:spec'); // INTAKE
+    engine(['triage', '--id', 'req-0001', '--tier', 'STANDARD'], { root });
+    touch(root, 'requests/req-0001/SPEC.md', 'x');
+    engine(['advance', '--id', 'req-0001', '--to', 'SPECCED'], { root });
+    assert.equal(engine(['context', '--id', 'req-0001'], { root }).json.nextCommand, '/sd:plan'); // STANDARD/SPECCED
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('await rejects a gate the request has already passed', () => {
+  const root = initRepo();
+  try {
+    engine(['register', '--title', 'A', '--slug', 'a', '--tier', 'STANDARD'], { root });
+    engine(['triage', '--id', 'req-0001', '--tier', 'STANDARD'], { root });
+    touch(root, 'requests/req-0001/SPEC.md', 'x');
+    engine(['advance', '--id', 'req-0001', '--to', 'SPECCED'], { root });
+    touch(root, 'requests/req-0001/PLAN.md', 'x');
+    engine(['advance', '--id', 'req-0001', '--to', 'PLANNED'], { root });
+    // G3 (resolves at PLAN_OK) is still ahead -> allowed.
+    assert.equal(engine(['await', '--id', 'req-0001', '--gate', 'G3'], { root }).code, 0);
+    // G1 (resolved back at SPECCED) is already passed -> refused.
+    assert.equal(engine(['await', '--id', 'req-0001', '--gate', 'G1'], { root }).code, 5);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('global flags work in any position (command-first OR globals-first)', () => {
+  const root = initRepo();
+  try {
+    engine(['register', '--title', 'T', '--slug', 't', '--tier', 'STANDARD'], { root });
+    // globals-first — the form the ENGINE macro teaches — must resolve the command.
+    const first = engine(['--project-dir', root, '--json', 'status'], { json: false });
+    assert.equal(first.code, 0, first.stderr);
+    assert.equal(first.json.ok, true);
+    // command-first still works (unchanged).
+    assert.equal(engine(['status'], { root }).code, 0);
+    // only globals, no command => a position-aware EUSAGE that names the missing command.
+    const none = engine(['--json'], { json: false });
+    assert.equal(none.code, 2);
+    assert.match(none.json.message, /no subcommand given/);
   } finally {
     cleanup(root);
   }

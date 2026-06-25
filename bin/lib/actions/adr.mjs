@@ -111,7 +111,12 @@ function handleAcceptAdr(ctx) {
   saveGovernsIndex(root, buildGovernsIndex(root, state, opts.clock)); // keep the gate's index current
   markArchStale(root); // accepted-ADR set changed -> ARCHITECTURE must be regenerated before DONE
   const remaining = req.adrs.filter((a) => a.status === 'proposed').length;
-  return ok({ req: id, adr: adrId, status: 'accepted', proposedRemaining: remaining }, `accepted ${adrId} (${remaining} ADR(s) still proposed).`);
+  // Surface the staleness now, where it is introduced, instead of letting it ambush the
+  // final `engine verify`. (The DONE gate still hard-blocks until `arch-sync` runs.)
+  return ok(
+    { req: id, adr: adrId, status: 'accepted', proposedRemaining: remaining, architectureStale: true },
+    `accepted ${adrId} (${remaining} ADR(s) still proposed). ARCHITECTURE.md is now stale — run \`engine arch-sync\` before DONE.`,
+  );
 }
 
 // decide --id --adr --verdict accept|reject|modify [--note]  (records a per-ADR
@@ -133,9 +138,14 @@ function handleDecide(ctx) {
   // modify: leave proposed; the /sd:decide command routes the request to REVISING_ADR.
   save(root, state, opts);
   saveGovernsIndex(root, buildGovernsIndex(root, state, opts.clock));
-  if (verdict !== 'modify') markArchStale(root);
+  const stale = verdict !== 'modify';
+  if (stale) markArchStale(root);
   const remaining = req.adrs.filter((a) => a.status === 'proposed').length;
-  return ok({ req: id, adr: adrId, verdict, status: entry.status, proposedRemaining: remaining }, `${adrId}: ${verdict} -> ${entry.status} (${remaining} still proposed).`);
+  const note = stale ? ' ARCHITECTURE.md is now stale — run `engine arch-sync` before DONE.' : '';
+  return ok(
+    { req: id, adr: adrId, verdict, status: entry.status, proposedRemaining: remaining, architectureStale: stale },
+    `${adrId}: ${verdict} -> ${entry.status} (${remaining} still proposed).${note}`,
+  );
 }
 
 // adr next [--count N]  (read-only: reserve the next gap-aware ADR ids for the

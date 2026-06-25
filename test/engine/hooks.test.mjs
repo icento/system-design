@@ -66,6 +66,38 @@ test('hook-gate stops gating once the DEEP request has a SPEC and no proposed AD
   }
 });
 
+const SPEC_A = ['---', 'id: req-0001', 'kind: spec', 'title: A', 'status: ready', 'requirements:', '  - id: REQ-0001-01', '    statement: a', '    kind: functional', '    priority: must', 'nonGoals: []', '---', 's', ''].join('\n');
+const PLAN_A = ['---', 'id: req-0001', 'kind: plan', 'status: draft', 'steps:', '  - id: STEP-001', '    intent: a', '    satisfies:', '      - REQ-0001-01', '    files:', '      - src/a/x.js', '    tests:', '      - test/a.test.mjs::a', '    status: todo', '---', 'p', ''].join('\n');
+
+// The multi-request bypass: a newer open request must NOT disable an in-flight
+// request's PLAN-scope gate. (Old behavior gated only the most-recently-updated
+// request, so registering req-0002 flipped req-0001's out-of-scope edit to allow.)
+test('hook-gate keeps enforcing an IMPLEMENTING request PLAN scope after a newer request is registered', () => {
+  const root = initRepo();
+  try {
+    engine(['register', '--title', 'A', '--slug', 'a', '--tier', 'STANDARD'], { root });
+    engine(['triage', '--id', 'req-0001', '--tier', 'STANDARD'], { root });
+    touch(root, 'requests/req-0001/SPEC.md', SPEC_A);
+    engine(['advance', '--id', 'req-0001', '--to', 'SPECCED'], { root });
+    touch(root, 'requests/req-0001/PLAN.md', PLAN_A);
+    engine(['advance', '--id', 'req-0001', '--to', 'PLANNED'], { root });
+    touch(root, 'requests/req-0001/qa/plan-review.verdict.json', JSON.stringify({ verdict: 'PASS', blockerCount: 0 }));
+    engine(['advance', '--id', 'req-0001', '--to', 'PLAN_OK'], { root });
+    engine(['advance', '--id', 'req-0001', '--to', 'IMPLEMENTING'], { root });
+
+    // Single-request: in-scope allowed, out-of-scope gated.
+    assert.equal(gate(root, 'src/a/x.js'), 'allow');
+    assert.notEqual(gate(root, 'src/forbidden.js'), 'allow');
+
+    // Register a NEWER request — must not weaken req-0001's gate.
+    engine(['register', '--title', 'B', '--slug', 'b', '--tier', 'STANDARD'], { root });
+    assert.equal(gate(root, 'src/a/x.js'), 'allow', 'in-scope edit still allowed');
+    assert.notEqual(gate(root, 'src/forbidden.js'), 'allow', 'PLAN scope still enforced after a newer request exists');
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('status --hook rehydrates pending gates and is silent outside a workflow repo', () => {
   const root = initRepo();
   try {

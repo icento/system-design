@@ -6,7 +6,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { ok, errNoRequest, errNotRepo, errUsage, errGate } from '../output.mjs';
 import { parse, stringify } from '../frontmatter.mjs';
 import { load, isWorkflowRepo, statePaths } from '../state.mjs';
-import { requestPaths, traceabilityResult } from '../paths.mjs';
+import { requestPaths, traceabilityResult, readQaVerdict } from '../paths.mjs';
 import { stepId } from '../ids.mjs';
 
 function loadReq(root, id, opts) {
@@ -82,6 +82,11 @@ function handleGateDone(ctx) {
   const trace = traceabilityResult(root, req);
   if (!trace.ok) throw errGate(`traceability incomplete: ${trace.holes.join('; ')}`, { holes: trace.holes });
   if (archStale(root)) throw errGate('ARCHITECTURE.md is stale; run `engine arch-sync` (no flags — --check only reports) before DONE', { stale: true });
+  if (req.tier !== 'TRIVIAL') {
+    const qa = readQaVerdict(root, req);
+    if (!qa) throw errGate('qa/qa.verdict.json missing or invalid (run /sd:verify before DONE)', { qa: null });
+    if (qa.overall !== 'PASS') throw errGate(`QA verdict is ${qa.overall}, not PASS`, { qa: qa.overall });
+  }
   return ok({ id, ready: true }, `${id} is ready for DONE.`);
 }
 

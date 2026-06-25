@@ -5,12 +5,12 @@
 
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, copyFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { ok, errNoRequest, errNotRepo, errUsage, errState } from '../output.mjs';
+import { ok, errNoRequest, errNotRepo, errUsage, errState, errGate } from '../output.mjs';
 import { load, save, emptyState, isWorkflowRepo, statePaths } from '../state.mjs';
 import { docsPaths, requestPaths, requestDir, requestsRoot, buildPreconditions } from '../paths.mjs';
 import { applyTransition, evaluateTransition } from '../transition.mjs';
 import { nextReqId, isReqId } from '../ids.mjs';
-import { GRAPH, isState } from '../gate.mjs';
+import { GRAPH, isState, isTerminal, gateAlreadyPassed, nextCommand } from '../gate.mjs';
 
 const slugify = (s) =>
   s
@@ -178,6 +178,12 @@ function handleAwait(ctx) {
   const { state } = load(root, opts);
   const req = state.requests[id];
   if (!req) throw errNoRequest(`request ${id} not found`, { id });
+  // A cursor for a gate that can no longer be reached is stale/inconsistent: refuse it
+  // rather than silently record a misleading "awaiting" advisory (a DONE request, or a
+  // gate already cleared — e.g. awaiting G1 once the request is past SPECCED).
+  if (isTerminal(req.status) || gateAlreadyPassed(req.status, gate)) {
+    throw errGate(`cannot await ${gate} from ${req.status} (gate already passed or request terminal)`, { status: req.status, gate });
+  }
   req.awaiting = gate;
   save(root, state, opts);
   return ok({ id, awaiting: gate }, `${id}: awaiting ${gate}`);
@@ -201,6 +207,7 @@ function handleContext(ctx) {
     planReview: existsSync(rp.planReview) ? rp.planReview : null,
     decisions: existsSync(rp.decisions) ? rp.decisions : null,
   };
+  const nc = nextCommand(req);
   const bundle = {
     id,
     slug: req.slug,
@@ -212,12 +219,15 @@ function handleContext(ctx) {
     blockedReason: req.blockedReason ?? null,
     adrs: req.adrs,
     legalTargets: GRAPH[req.status] ?? [],
+    nextCommand: nc.command,
+    nextHint: nc.note,
     overrideAvailable: (req.overrides ?? []).some((o) => o.consumedAt === null),
     artifacts,
   };
+  const nextStr = nc.command ? ` next=${nc.command}` : '';
   return ok(
     bundle,
-    `${id} [${req.status}] tier=${req.tier ?? '?'} awaiting=${req.awaiting ?? '-'} openQ=${req.openQuestions}`,
+    `${id} [${req.status}] tier=${req.tier ?? '?'} awaiting=${req.awaiting ?? '-'} openQ=${req.openQuestions}${nextStr}`,
   );
 }
 
@@ -251,8 +261,12 @@ function handleStatus(ctx) {
   return ok({ count: reqs.length, requests: reqs.map(summarize) }, human);
 }
 
-const summarize = (r) => ({ id: r.id, slug: r.slug, status: r.status, tier: r.tier, awaiting: r.awaiting ?? null, openQuestions: r.openQuestions });
-const formatRequestLine = (r) => `${r.id} [${r.status}]${r.awaiting ? ' awaiting ' + r.awaiting : ''} tier=${r.tier ?? '?'} — "${r.title}"`;
+const summarize = (r) => ({ id: r.id, slug: r.slug, status: r.status, tier: r.tier, awaiting: r.awaiting ?? null, openQuestions: r.openQuestions, nextCommand: nextCommand(r).command });
+const formatRequestLine = (r) => {
+  const nc = nextCommand(r);
+  const next = nc.command ? ` → ${nc.command}` : '';
+  return `${r.id} [${r.status}]${r.awaiting ? ' awaiting ' + r.awaiting : ''} tier=${r.tier ?? '?'} — "${r.title}"${next}`;
+};
 
 // ---- validate (state + referential cross-checks) -------------------------
 

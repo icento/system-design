@@ -32,6 +32,10 @@ const GLOBAL_OPTIONS = {
   help: { type: 'boolean' },
 };
 
+// Global flags that take a value (`--project-dir DIR`); used to skip the value when
+// scanning for the command so a global may appear before it (`--project-dir D status`).
+const GLOBAL_STRING_FLAGS = new Set(['--project-dir', '--plugin-root']);
+
 // The registry. Later milestones spread additional command modules in here.
 export const REGISTRY = {
   ...lifecycleCommands,
@@ -55,15 +59,29 @@ function engineVersion() {
   }
 }
 
+// Find the command token(s), tolerating global flags in ANY position. Scans past
+// global flags (and the value of a string-valued one) so `engine --project-dir D
+// --json status` resolves to `status` just like `status --project-dir D --json`.
+// Returns { key, rest } where `rest` is argv with the command token(s) removed
+// (globals stay in `rest` for parseArgs).
 function splitCommand(argv) {
   const toks = [];
-  let i = 0;
-  while (i < argv.length && !argv[i].startsWith('-') && toks.length < 2) {
-    toks.push(argv[i]);
-    i++;
+  const used = new Set();
+  for (let i = 0; i < argv.length && toks.length < 2; i++) {
+    const a = argv[i];
+    if (a.startsWith('-')) {
+      // `--project-dir DIR`: also skip its value so it isn't mistaken for the command.
+      if (GLOBAL_STRING_FLAGS.has(a) && i + 1 < argv.length && !argv[i + 1].startsWith('-')) i++;
+      continue;
+    }
+    toks.push(a);
+    used.add(i);
+    // Only collect a second token when the first is a namespace (`principles retrieve`).
+    if (!(toks.length === 1 && NAMESPACES.has(a))) break;
   }
-  if (toks.length >= 2 && NAMESPACES.has(toks[0])) return { key: `${toks[0]} ${toks[1]}`, rest: argv.slice(2) };
-  if (toks.length >= 1) return { key: toks[0], rest: argv.slice(1) };
+  const rest = argv.filter((_, i) => !used.has(i));
+  if (toks.length >= 2 && NAMESPACES.has(toks[0])) return { key: `${toks[0]} ${toks[1]}`, rest };
+  if (toks.length >= 1) return { key: toks[0], rest };
   return { key: '', rest: argv };
 }
 
@@ -111,7 +129,13 @@ export function run(argv, io = {}) {
   opts.quiet = parsed.values.quiet === true;
 
   if (!entry) {
-    return finishError(errUsage(`unknown command "${key || argv[0]}"`, { command: key || argv[0] }), opts, out, err);
+    const culprit = key || argv[0] || '';
+    // Distinguish "no command at all" (only globals) from a genuinely unknown command.
+    const msg =
+      key === '' && culprit.startsWith('-')
+        ? `no subcommand given (global flags like ${culprit} may appear in any position, but a command is required)`
+        : `unknown command "${culprit}"`;
+    return finishError(errUsage(msg, { command: culprit }), opts, out, err);
   }
 
   const root = resolve(parsed.values['project-dir'] || process.env.CLAUDE_PROJECT_DIR || process.cwd());

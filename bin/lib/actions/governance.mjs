@@ -40,7 +40,7 @@ function handleGoverns(ctx) {
   );
 }
 
-// override add --req --path|--glob --reason --scope once|session|request [--adr]
+// override add --req --path|--glob --reason --scope once|request [--adr]
 function handleOverrideAdd(ctx) {
   const { root, opts } = ctx;
   const id = ctx.values.req;
@@ -51,7 +51,11 @@ function handleOverrideAdd(ctx) {
   const reason = ctx.values.reason;
   if (!reason) throw errUsage('override add requires --reason');
   const scope = ctx.values.scope ?? 'once';
-  if (!['once', 'session', 'request'].includes(scope)) throw errUsage('--scope must be once|session|request');
+  // `session` was an orphan: there is no session boundary in the engine, so a
+  // session-scoped override never expired — it behaved like a permanent `request`
+  // override but was undocumented. Only `once` (consumed on first use) and `request`
+  // (persists for the request) are real, honored scopes.
+  if (!['once', 'request'].includes(scope)) throw errUsage('--scope must be once|request');
   const adr = ctx.values.adr ?? null;
   if (adr && !isAdrId(adr)) throw errUsage(`invalid --adr ${adr}`);
 
@@ -96,7 +100,7 @@ export const governanceCommands = {
   'sync-index': { summary: 'rebuild the accepted-ADR governs index', options: {}, handler: handleSyncIndex },
   governs: { summary: 'query which accepted ADRs govern a path', options: { path: { type: 'string' } }, handler: handleGoverns },
   'override add': {
-    summary: 'add an audited edit override (scope once|session|request)',
+    summary: 'add an audited edit override (scope once|request)',
     options: { req: { type: 'string' }, path: { type: 'string' }, glob: { type: 'string' }, reason: { type: 'string' }, scope: { type: 'string' }, adr: { type: 'string' }, by: { type: 'string' } },
     handler: handleOverrideAdd,
   },

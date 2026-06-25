@@ -43,6 +43,8 @@ function driveToVerifying(root) {
   touch(root, 'test/feat.test.mjs', 'test("works", () => {});');
   E(root, 'step-done', '--id', 'req-0001', '--step', '1');
   E(root, 'advance', '--id', 'req-0001', '--to', 'VERIFYING');
+  // /sd:verify persists the qa-verifier's verdict; the engine's DONE gate consumes it.
+  touch(root, 'requests/req-0001/qa/qa.verdict.json', JSON.stringify({ overall: 'PASS', results: [], failures: [] }));
 }
 
 test('INTAKE -> DONE for a DEEP request (with ADR, plan review, arch-sync)', () => {

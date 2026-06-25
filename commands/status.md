@@ -14,9 +14,13 @@ current phase, tier, any pending gate, and the recommended next command.
 
 1. If the user named a request id, run `$ENGINE context --id <id> ... --json` and
    report: status, tier, `awaiting` gate, open-question count, blocked reason,
-   staged ADRs, and `legalTargets`.
-2. Otherwise run `$ENGINE status ... --json` and list each request with its phase.
-3. Map the current status to the next command and tell the user:
+   staged ADRs, and `legalTargets`. **Lead with the engine-provided `nextCommand`**
+   (and `nextHint`) — it is computed from the lifecycle graph, so prefer it over the
+   table below.
+2. Otherwise run `$ENGINE status ... --json` and list each request with its phase
+   (each request summary carries its own `nextCommand`).
+3. The engine's `nextCommand` is authoritative; this mapping is the human-readable
+   fallback:
    - INTAKE → `/sd:new` is done; run `/sd:spec`
    - TRIAGED → `/sd:spec`
    - SPECCED → `/sd:design` (or `/sd:plan` for STANDARD with no ADRs)

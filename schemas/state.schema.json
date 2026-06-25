@@ -91,7 +91,7 @@
               "reason": { "type": "string", "minLength": 1 },
               "by": { "type": "string" },
               "ts": { "type": "string", "format": "date-time" },
-              "scope": { "type": "string", "enum": ["once", "session", "request"] },
+              "scope": { "type": "string", "enum": ["once", "request"] },
               "consumedAt": { "type": ["string", "null"] }
             }
           }

@@ -51,19 +51,29 @@ Let `REQ` be the request id and `SPEC` its `requests/<REQ>/SPEC.md` (both given 
 5. `bash ${CLAUDE_PLUGIN_ROOT}/bin/engine.mjs adr next --count <number-of-questions> --json`
    — reserve one ADR id per question (in order).
 6. For each question, **write `docs/adrs/<adr-id>.md`** using the template at
-   `docs/adrs/_template/proposed-adr.md.tmpl` as a guide. Fill the frontmatter exactly:
-   - `id`, `kind: adr`, `title`, `status: proposed`, `date` (today, YYYY-MM-DD),
+   `docs/adrs/_template/proposed-adr.md.tmpl` as a guide. Fill the frontmatter exactly,
+   **respecting these hard length caps** (the engine's schema rejects anything over them,
+   so `adr stage` will fail on an oversized field — keep the frontmatter terse and push
+   long prose into the body):
+   - `id`, `kind: adr`, `title` (**≤200 chars**), `status: proposed`, `date` (today, YYYY-MM-DD),
    - `request: <REQ>`,
-   - `governs`: the glob(s) of files this decision will constrain (e.g. `src/ratelimit/**`),
+   - `governs`: the glob(s) of files this decision will constrain (e.g. `src/ratelimit/**`);
+     each glob **≤200 chars**,
    - `principles`: the cited principle ids,
-   - `decisionQuestion`: the question text,
+   - `decisionQuestion`: the question text (**≤280 chars**),
    - `choice`: the **recommended** option's directive (from the principle's
-     `recommended_default`, made concrete for this entity),
-   - `constraints.forbids` / `constraints.requires`: concrete rules the choice implies
-     (may be empty),
+     `recommended_default`, made concrete for this entity) — a **short** summary
+     (**≤400 chars**); if the rationale is longer, keep `choice` a one-line directive and
+     explain in the Decision body,
+   - `constraints.forbids` / `constraints.requires`: concrete rules the choice implies,
+     each **≤200 chars** (may be empty),
    - `supersedes: null`.
    Write a real Context / Decision / Consequences body.
-7. Return the DecisionQuestionSet JSON **as your entire final message**.
+7. **Self-validate before returning.** For each staged ADR run
+   `bash ${CLAUDE_PLUGIN_ROOT}/bin/engine.mjs validate-doc --kind adr --path docs/adrs/<adr-id>.md`
+   and fix any `ESCHEMA` error (most often a `choice` over 400 chars) in place. Never hand
+   back an ADR that `adr stage` would reject — validation is your job, not the orchestrator's.
+8. Return the DecisionQuestionSet JSON **as your entire final message**.
 
 ## DecisionQuestionSet shape (validated by the engine — match it exactly)
 
